@@ -1,0 +1,22 @@
+# 最小可跑版：仅业务服务（SQLite + ChromaDB 数据卷持久化）
+services:
+  kb-app:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    image: kb-p1:latest
+    container_name: kb-p1
+    restart: unless-stopped
+    env_file:
+      - .env.prod
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./volumes/data:/app/data
+      - ./volumes/logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s

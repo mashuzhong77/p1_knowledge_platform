@@ -1,0 +1,21 @@
+# ===== Python =====
+__pycache__/
+*.pyc
+.pytest_cache/
+.pytest_tmp/
+.venv/
+
+# ===== 环境与密钥（含真实 API key / 本地绝对路径，绝不提交） =====
+.env
+.env.prod
+
+# ===== 数据与运行时产物（真实数据库 / 向量 / 上传 / 日志 / 知识语料） =====
+data/
+deploy/volumes/
+
+# ===== IDE =====
+.idea/
+
+# ===== 本地验证产物（verify_e2e.py 含本机演示密码，仅本地使用） =====
+verify.log
+verify_e2e.py
