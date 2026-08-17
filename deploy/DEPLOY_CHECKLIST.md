@@ -13,8 +13,10 @@
   - 公网开放：`443`（HTTPS）、`22`（SSH）；`8000` 仅对内/本机（由 Caddy/nginx 反代转发）
   - 其余端口一律不暴露公网
 - [ ] 准备 `.env.prod` 需要的环境变量：
-  - `DEEPSEEK_API_KEY`（本机 `.env` 里已有，填服务器用同一把 key 或服务端独立 key）
-  - `EMBEDDING_MODEL`：默认 `hash`（免下载模型，离线可用）；有 GPU/网络可改 `BAAI/bge-m3`
+  - `LLM_API_KEY`（主配置；本机 `.env` 里已有，填服务器用同一把 key 或服务端独立 key；遗留别名 `DEEPSEEK_API_KEY` 仍兼容）
+  - `EMBEDDING_MODEL`：默认 `hash`（免下载模型，离线可用）；远程 BGE-M3 填 `EMBEDDING_API_URL`（P3 GPU 服务，可选）
+  - `RERANK_API_URL`（可选）：远程 BGE-reranker，默认关闭
+  - 检索参数（可选，生产推荐）：`TOP_K=8`（本地小库默认 5，线上知识面更大可加大召回）、`MMR_ENABLED=true`（去冗余，避免同源多段挤占 top_k）；`RRF_K / W_BM25 / W_VEC / RECALL_MULTIPLIER` 保持默认即可
 - [ ] 确认本机已装 Docker（用于本地先构建镜像自检）——本机 Docker 当前不可用，若先本地自检需先启动 Docker Desktop
 
 ---
@@ -54,7 +56,7 @@
   ```bash
   cd /opt/p1_knowledge_platform/deploy
   cp .env.prod.example .env.prod
-  vim .env.prod   # 填入 DEEPSEEK_API_KEY；EMBEDDING_MODEL 按需保持 hash
+  vim .env.prod   # 填入 LLM_API_KEY（DeepSeek 官方或 P3 vLLM）；EMBEDDING_MODEL 保持 hash
   ```
 - [ ] 确认磁盘/内存满足：
   - 镜像含 sentence-transformers / chromadb / pdfplumber，构建体积较大（数 GB 级）
@@ -101,7 +103,7 @@
 - [ ] 从本机/公网访问 `http://<服务器IP>:8000` 打开前端页面
 - [ ] 登录任一演示账号
 - [ ] 导入一条文档（文本或文件），确认入库
-- [ ] 发一条问答，确认 SSE 流式回答（有 key 走 DeepSeek，无 key 会返回"离线演示模式"）
+- [ ] 发一条问答，确认 SSE 流式回答（有 key 走配置的 LLM，无 key 会返回"离线演示模式"；回答末尾应显示 `[模型] <名称>`）
 - [ ] 查看 `GET /api/dashboard/metrics` 有统计
 - [ ] 检查 `data/uploads/`、`data/db.sqlite3`、`data/vectors/` 已生成数据
 

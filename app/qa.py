@@ -13,7 +13,14 @@ from .knowledge.vectorstore import get_vectorstore
 from .log import logger
 from .permissions import unit_allows
 from .prompts import load_prompt
-from .retrieval import default_hyde_call, dynamic_topk, hyde_answer, reciprocal_rank_fusion
+from .retrieval import (
+    default_hyde_call,
+    dynamic_topk,
+    hyde_answer,
+    mmr_diverse,
+    reciprocal_rank_fusion,
+    rerank,
+)
 from .rewrite import build_history_text, default_rewrite_call, rewrite_query
 from .settlement import get_faq_answer, upsert_gap
 from .utils import now_iso
@@ -66,11 +73,17 @@ def parse_evidence_numbers(text: str) -> list[int]:
     return [int(x) for x in re.findall(r"\[证据(\d+)\]", text or "")]
 
 
-def answer_question(question: str, evidence: list[dict], blocked: list[str], llm_call) -> dict:
+def answer_question(question: str, evidence: list[dict], blocked: list[str], llm_call, emit_delta=None) -> dict:
     if not evidence:
-        return {"status": "refused", "answer": "未找到相关资料，无法回答。", "evidence_ids": [], "blocked": blocked}
+        msg = "未找到相关资料，无法回答。"
+        if emit_delta is not None:
+            emit_delta(msg)
+        return {"status": "refused", "answer": msg, "evidence_ids": [], "blocked": blocked}
     prompt = build_prompt(question, evidence, blocked)
-    raw = llm_call(prompt)
+    if emit_delta is not None:
+        raw = stream_llm_call(prompt, on_chunk=emit_delta)  # 真流式；失败/离线降级为整串一次 emit
+    else:
+        raw = llm_call(prompt)
     valid = {e["id"] for e in evidence}
     ids = [i for i in parse_evidence_numbers(raw) if i in valid]
     return {
@@ -93,15 +106,15 @@ def _offline_has_relevant(query: str) -> bool:
 
 
 def default_llm_call(prompt: str) -> str:
-    if settings.deepseek_api_key:
+    if settings.effective_llm_api_key:
         try:
             import httpx
 
             resp = httpx.post(
-                f"{settings.deepseek_base_url}/chat/completions",
-                headers={"Authorization": f"Bearer {settings.deepseek_api_key}"},
+                f"{settings.effective_llm_base_url}/chat/completions",
+                headers={"Authorization": f"Bearer {settings.effective_llm_api_key}"},
                 json={
-                    "model": settings.deepseek_model,
+                    "model": settings.effective_llm_model,
                     "messages": [{"role": "user", "content": prompt}],
                     "temperature": 0.1,
                     "stream": False,
@@ -116,15 +129,82 @@ def default_llm_call(prompt: str) -> str:
         except Exception as e:  # noqa: BLE001
             logger.error(f"default_llm_call failed: {e}")
             return f"（模型调用失败：{e}）\n"
-    logger.warning("default_llm_call skipped: deepseek_api_key is empty, using offline fallback")
+    logger.warning("default_llm_call skipped: llm_api_key is empty, using offline fallback")
     m = re.search(r"\[证据1\]\s*([^\n（]+)", prompt)
     snippet = (m.group(1).strip() if m and m.group(1).strip() else "相关资料")[:80]
     return f"（离线演示模式）根据[证据1]，{snippet}……更多内容请配置模型 API 后查看。"
 
 
-def ask(question: str, user: dict, session_id: str = "") -> dict:
+def stream_llm_call(prompt: str, on_chunk) -> str:
+    """真 token 流式：httpx.stream 解析 OpenAI 兼容 SSE，逐 delta 调 on_chunk；返回拼接全文。
+
+    流式失败（网络/解析）时降级为 default_llm_call 后 on_chunk(整串一次)；
+    离线（无 key）同样整串一次 emit。调用方通过 on_chunk 驱动前端逐 token 渲染。
+    """
+    if settings.effective_llm_api_key:
+        import httpx
+
+        payload = {
+            "model": settings.effective_llm_model,
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": 0.1,
+            "stream": True,
+        }
+        try:
+            with httpx.stream(
+                "POST",
+                f"{settings.effective_llm_base_url}/chat/completions",
+                headers={"Authorization": f"Bearer {settings.effective_llm_api_key}"},
+                json=payload,
+                timeout=60,
+            ) as resp:
+                resp.raise_for_status()
+                parts: list[str] = []
+                for line in resp.iter_lines():
+                    line = (line or "").strip()
+                    if not line.startswith("data:"):
+                        continue
+                    data = line[5:].strip()
+                    if not data or data == "[DONE]":
+                        continue
+                    obj = json.loads(data)
+                    delta = (obj.get("choices") or [{}])[0].get("delta") or {}
+                    if delta.get("content"):
+                        parts.append(delta["content"])
+                        on_chunk(delta["content"])
+                    if obj.get("usage"):
+                        _LAST_USAGE.update(obj["usage"])  # R9：流式末尾 usage 帧计入 token 计量
+            return "".join(parts)
+        except Exception:  # noqa: BLE001
+            logger.exception("stream_llm_call failed, fallback to non-stream")
+    raw = default_llm_call(prompt)
+    on_chunk(raw)
+    return raw
+
+
+def _contents_for(unit_ids: list) -> dict:
+    """批量取单元内容（rerank 用），返回 {unit_id: content}。"""
+    ids = [i for i in unit_ids if i is not None]
+    if not ids:
+        return {}
+    placeholders = ",".join("?" for _ in ids)
+    with db() as conn:
+        rows = conn.execute(
+            f"SELECT id, content FROM knowledge_units WHERE id IN ({placeholders})",
+            ids,
+        ).fetchall()
+    return {int(r["id"]): r["content"] for r in rows}
+
+
+def _model_label() -> str:
+    """当前生效模型名；离线（无 key）时为空串。"""
+    return settings.effective_llm_model if settings.effective_llm_api_key else ""
+
+
+def ask(question: str, user: dict, session_id: str = "", emit_delta=None) -> dict:
     start = time.time()
     logger.info(f"ask start: user={user['id']} session={session_id or '-'}")
+    emit = emit_delta if emit_delta is not None else (lambda t: None)
 
     # 验收点 6：FAQ 缓存加速——命中已审核 FAQ 直接返回，不再走检索与 LLM
     cached = get_faq_answer(question)
@@ -160,6 +240,7 @@ def ask(question: str, user: dict, session_id: str = "") -> dict:
             "authorized_ids": [],
             "unauthorized_ids": [],
             "cached": True,
+            "model": _model_label(),
         }
 
     # R1/R2：问句改写 + 知识域识别（离线时 llm_call=None → 原问题兜底）
@@ -175,15 +256,16 @@ def ask(question: str, user: dict, session_id: str = "") -> dict:
     rewrite = rewrite_query(
         question,
         history_text,
-        llm_call=default_rewrite_call if settings.deepseek_api_key else None,
+        llm_call=default_rewrite_call if settings.effective_llm_api_key else None,
     )
     rewritten_query = rewrite["rewritten_query"]
     domains = rewrite["domains"]
 
     # 无关话题拒答：在线按知识域识别（域为空 → 拒）；离线按召回低分（BM25 无命中且向量分低 → 拒）
-    if settings.deepseek_api_key and not domains:
+    if settings.effective_llm_api_key and not domains:
         result = {
             "status": "refused",
+            "model": _model_label(),
             "answer": "该问题不属于本知识库领域（建筑规范/绿建/双碳），请提出与知识库相关的问题。",
             "evidence_ids": [],
             "blocked": [],
@@ -198,6 +280,7 @@ def ask(question: str, user: dict, session_id: str = "") -> dict:
             "tokens": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
             "refuse_reason": "out_of_domain",
         }
+        emit(result["answer"])
         with db() as conn:
             conn.execute(
                 """INSERT INTO qa_access_logs
@@ -221,9 +304,10 @@ def ask(question: str, user: dict, session_id: str = "") -> dict:
             )
         logger.info(f"ask refused: out_of_domain domains={domains}")
         return result
-    if not settings.deepseek_api_key and not _offline_has_relevant(rewritten_query):
+    if not settings.effective_llm_api_key and not _offline_has_relevant(rewritten_query):
         result = {
             "status": "refused",
+            "model": _model_label(),
             "answer": "未找到相关资料，无法回答。",
             "evidence_ids": [],
             "blocked": [],
@@ -238,6 +322,7 @@ def ask(question: str, user: dict, session_id: str = "") -> dict:
             "tokens": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
             "refuse_reason": "low_score",
         }
+        emit(result["answer"])
         with db() as conn:
             conn.execute(
                 """INSERT INTO qa_access_logs
@@ -264,19 +349,61 @@ def ask(question: str, user: dict, session_id: str = "") -> dict:
         return result
 
     # R3 多路召回：路1 混合检索（BM25+向量）；路2 HyDE（有 LLM 时启用）
-    routes = [("hybrid", hybrid_search(rewritten_query, top_k=settings.top_k * 2))]
+    recall_top = settings.top_k * settings.recall_multiplier
+    routes = [
+        (
+            "hybrid",
+            hybrid_search(
+                rewritten_query,
+                top_k=recall_top,
+                w_bm25=settings.w_bm25,
+                w_vec=settings.w_vec,
+            ),
+        )
+    ]
     hyde_text = hyde_answer(
         rewritten_query,
-        llm_call=default_hyde_call if settings.deepseek_api_key else None,
+        llm_call=default_hyde_call if settings.effective_llm_api_key else None,
     )
     if hyde_text:
         routes.append(
-            ("hyde", hybrid_search(f"{rewritten_query},{hyde_text}", top_k=settings.top_k * 2))
+            (
+                "hyde",
+                hybrid_search(
+                    f"{rewritten_query},{hyde_text}",
+                    top_k=recall_top,
+                    w_bm25=settings.w_bm25,
+                    w_vec=settings.w_vec,
+                ),
+            )
         )
 
-    # R3 RRF 按排名融合 + R4 动态断崖截断
-    fused = reciprocal_rank_fusion([(r, 1.0) for _, r in routes], top=settings.top_k)
+    # R3 RRF 按排名融合 + R5 远程 rerank 重排（配置 RERANK_API_URL 才启用）
+    #   + MMR 去冗余（MMR_ENABLED）+ R4 动态断崖截断
+    rerank_enabled = bool(settings.rerank_api_url)
+    fused = reciprocal_rank_fusion(
+        [(r, 1.0) for _, r in routes],
+        k=settings.rrf_k,
+        top=settings.rerank_top if rerank_enabled else settings.top_k,
+    )
+    if rerank_enabled:
+        fused = rerank(
+            rewritten_query,
+            fused,
+            content_getter=_contents_for,
+            api_url=settings.rerank_api_url,
+            api_key=settings.rerank_api_key,
+            top=settings.top_k,
+        )
+    if settings.mmr_enabled:
+        fused = mmr_diverse(
+            fused,
+            content_getter=_contents_for,
+            lambda_=settings.mmr_lambda,
+            top=settings.mmr_top or settings.top_k,
+        )
     hits = dynamic_topk(fused, max_topk=settings.top_k)
+    score_by_id = {int(h["unit_id"]): h.get("score", 0.0) for h in hits}
     unit_ids = [h["unit_id"] for h in hits]
 
     evidence: list[dict] = []
@@ -302,7 +429,12 @@ def ask(question: str, user: dict, session_id: str = "") -> dict:
             if unit_allows(u, user):
                 authorized.append(uid)
                 evidence.append(
-                    {"id": len(evidence) + 1, "content": row["content"], "source": row["title"]}
+                    {
+                        "id": len(evidence) + 1,
+                        "content": row["content"],
+                        "source": row["title"],
+                        "score": score_by_id.get(uid, 0.0),
+                    }
                 )
             else:
                 unauthorized.append(uid)
@@ -325,11 +457,16 @@ def ask(question: str, user: dict, session_id: str = "") -> dict:
                 if unit_allows(u, user):
                     authorized.append(uid)
                     evidence.append(
-                        {"id": len(evidence) + 1, "content": row["content"], "source": row["title"]}
+                        {
+                            "id": len(evidence) + 1,
+                            "content": row["content"],
+                            "source": row["title"],
+                            "score": score_by_id.get(uid, 0.0),
+                        }
                     )
 
     _LAST_USAGE.clear()
-    result = answer_question(question, evidence, blocked, default_llm_call)
+    result = answer_question(question, evidence, blocked, default_llm_call, emit_delta=emit_delta)
     tokens = {
         "prompt_tokens": int(_LAST_USAGE.get("prompt_tokens") or 0),
         "completion_tokens": int(_LAST_USAGE.get("completion_tokens") or 0),
@@ -370,5 +507,6 @@ def ask(question: str, user: dict, session_id: str = "") -> dict:
     result["domains"] = domains
     result["domain_filtered"] = domain_filtered
     result["tokens"] = tokens
+    result["model"] = _model_label()
     logger.info(f"ask done: user={user['id']} latency_ms={latency} tokens={tokens['total_tokens']}")
     return result

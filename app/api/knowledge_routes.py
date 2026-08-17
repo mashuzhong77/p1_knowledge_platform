@@ -84,14 +84,17 @@ def import_text_api(body: ImportTextRequest, user: dict = Depends(require_user))
     scope = [
         {"target_type": p.target_type, "target_id": p.target_id} for p in (body.scope or [])
     ]
-    result = importer.import_text(
-        title=body.title,
-        content=body.content,
-        creator_id=user["id"],
-        security_level=body.security_level,
-        data_domain=body.data_domain,
-        scope=scope or None,
-    )
+    try:
+        result = importer.import_text(
+            title=body.title,
+            content=body.content,
+            creator_id=user["id"],
+            security_level=body.security_level,
+            data_domain=body.data_domain,
+            scope=scope or None,
+        )
+    except RuntimeError as e:
+        raise HTTPException(status_code=502, detail=str(e))
     audit.log_action(user["id"], "import", "knowledge_unit", ",".join(map(str, result.get("unit_ids", []))))
     return result
 

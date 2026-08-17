@@ -20,4 +20,5 @@ dependencies = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-q"
+# Windows 下系统临时目录易被残留进程锁住；固定到项目内（.pytest_tmp 已 gitignore）
+addopts = "-q --basetemp=.pytest_tmp"

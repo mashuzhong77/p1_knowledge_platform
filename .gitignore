@@ -13,6 +13,9 @@ __pycache__/
 data/
 deploy/volumes/
 
+# ===== 服务器定制部署脚本（可能含真实 key / 服务器路径，不提交） =====
+deploy/deploy_server.sh
+
 # ===== IDE =====
 .idea/
 

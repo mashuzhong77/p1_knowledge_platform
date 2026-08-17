@@ -31,6 +31,12 @@
     .btn-ok { background: #52c41a; border: none; color: #fff; border-radius: 4px; cursor: pointer; }
     .btn-no { background: #ff4d4f; border: none; color: #fff; border-radius: 4px; cursor: pointer; }
     .muted { color: #999; font-size: 12px; }
+    .evidence-panel { margin-top: 8px; border-top: 1px dashed #d9d9d9; padding-top: 8px; }
+    .evidence-title { font-weight: bold; margin-bottom: 4px; }
+    .evidence-item { font-size: 13px; margin: 2px 0; }
+    .evidence-n { color: #2f54eb; }
+    .evidence-score { color: #999; }
+    .low-conf { color: #cf1322; font-size: 13px; margin: 6px 0; }
   </style>
 </head>
 <body>
@@ -208,6 +214,12 @@
     let token = localStorage.getItem("kb_token") || "";
     let lastQuestion = "";
     let lastAnswer = "";
+    const CONF_THRESHOLD = 0.6;
+
+    function esc(s) {
+      return String(s == null ? "" : s).replace(/[&<>"']/g, c =>
+        ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    }
 
     function show(name) {
       document.querySelectorAll(".tab").forEach(s => s.style.display = "none");
@@ -320,8 +332,8 @@
       const showPermBtn = canPerm();
       d.forEach(u => {
         const tr = document.createElement("tr");
-        tr.innerHTML = "<td>" + u.id + "</td><td>" + u.title + "</td><td>" + (u.category || "") +
-          "</td><td>" + permSummary(u) + "</td><td>" + u.status + "</td><td>v" + u.version_no + "</td>" +
+        tr.innerHTML = "<td>" + u.id + "</td><td>" + esc(u.title) + "</td><td>" + esc(u.category || "") +
+          "</td><td>" + esc(permSummary(u)) + "</td><td>" + esc(u.status) + "</td><td>v" + esc(u.version_no) + "</td>" +
           "<td>" + (showPermBtn ? "<button onclick=\"openUnitPerm(" + u.id + ")\">权限</button>" : "") +
           "<button onclick=\"publish(" + u.id + ")\">发布</button>" +
           "<button onclick=\"archive(" + u.id + ")\">归档</button>" +
@@ -462,8 +474,8 @@
       tbody.innerHTML = "";
       d.forEach(v => {
         const tr = document.createElement("tr");
-        tr.innerHTML = "<td>" + v.id + "</td><td>v" + v.version_no + "</td><td>" + v.status + "</td><td>" +
-          v.title + "</td><td>" + (v.updated_at || "") + "</td><td>" +
+        tr.innerHTML = "<td>" + v.id + "</td><td>v" + v.version_no + "</td><td>" + esc(v.status) + "</td><td>" +
+          esc(v.title) + "</td><td>" + esc(v.updated_at || "") + "</td><td>" +
           "<button onclick=\"rollback(" + id + "," + v.id + ")\">回滚到此版本</button></td>";
         tbody.appendChild(tr);
       });
@@ -490,7 +502,7 @@
       });
       const reader = resp.body.getReader();
       const decoder = new TextDecoder();
-      let text = "", buf = "";
+      let text = "", buf = "", blocked = [], evidence = [], model = "";
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -501,17 +513,66 @@
           if (!part.startsWith("data: ")) continue;
           const evt = JSON.parse(part.slice(6));
           if (evt.event === "message_delta") { text += evt.delta; box.textContent = text; }
-          if (evt.event === "blocked" && evt.blocked.length) { box.textContent += "\n\n[权限提示] " + evt.blocked.join("；"); }
-          if (evt.event === "evidence") { box.textContent += "\n\n[引用] " + evt.evidence.map(e => e.source).join("；"); }
+          if (evt.event === "blocked") blocked = evt.blocked || [];
+          if (evt.event === "evidence") evidence = evt.evidence || [];
+          if (evt.event === "model") model = evt.model || "";
         }
       }
-      if (!text) box.textContent = "（无回答）";
+      box.textContent = text || "（无回答）";
       lastAnswer = text;
+      if (blocked.length) {
+        const note = document.createElement("div");
+        note.className = "low-conf";
+        note.textContent = "[权限提示] " + blocked.join("；");
+        box.appendChild(note);
+      }
+      if (evidence.length) renderEvidence(evidence, box);
+      if (model) {
+        const m = document.createElement("div");
+        m.className = "muted";
+        m.textContent = "[模型] " + model;
+        box.appendChild(m);
+      }
       const fb = document.createElement("div");
       fb.id = "feedbackRow";
       fb.innerHTML = '<button onclick="feedback(\'up\')">有用</button> ' +
                      '<button onclick="feedback(\'down\')">没用</button>';
       box.appendChild(fb);
+    }
+
+    function renderEvidence(evidence, box) {
+      const scores = evidence.map(e => Number(e.score) || 0);
+      const maxS = Math.max(...scores);
+      const avgS = scores.reduce((a, b) => a + b, 0) / scores.length;
+      const conf = maxS > 0 ? avgS / maxS : null;
+      const panel = document.createElement("div");
+      panel.className = "evidence-panel";
+      const title = document.createElement("div");
+      title.className = "evidence-title";
+      title.textContent = "引用证据";
+      panel.appendChild(title);
+      if (conf !== null && conf < CONF_THRESHOLD) {
+        const warn = document.createElement("div");
+        warn.className = "low-conf";
+        warn.textContent = "⚠ 低置信度：检索结果相关度较低，回答仅供参考";
+        panel.appendChild(warn);
+      }
+      evidence.forEach(e => {
+        const row = document.createElement("div");
+        row.className = "evidence-item";
+        const n = document.createElement("span");
+        n.className = "evidence-n";
+        n.textContent = "[" + e.id + "] ";
+        const s = document.createElement("span");
+        s.textContent = e.source || "";
+        const sc = document.createElement("span");
+        sc.className = "evidence-score";
+        const pct = maxS > 0 ? Math.round(((Number(e.score) || 0) / maxS) * 100) : null;
+        sc.textContent = pct !== null ? "　相关度 " + pct + "%" : "";
+        row.appendChild(n); row.appendChild(s); row.appendChild(sc);
+        panel.appendChild(row);
+      });
+      box.appendChild(panel);
     }
 
     async function feedback(rating) {
@@ -533,14 +594,14 @@
       const d = await api("/api/dashboard/metrics");
       const cards = document.getElementById("dashCards");
       cards.innerHTML =
-        '<div class="metric">访问次数<b>' + d.total_accesses + '</b></div>' +
-        '<div class="metric">独立用户<b>' + d.unique_users + '</b></div>' +
-        '<div class="metric">知识单元<b>' + d.knowledge_unit_count + '</b></div>' +
-        '<div class="metric">Token 消耗<b>' + d.token_consumption + '</b></div>';
+        '<div class="metric">访问次数<b>' + esc(d.total_accesses) + '</b></div>' +
+        '<div class="metric">独立用户<b>' + esc(d.unique_users) + '</b></div>' +
+        '<div class="metric">知识单元<b>' + esc(d.knowledge_unit_count) + '</b></div>' +
+        '<div class="metric">Token 消耗<b>' + esc(d.token_consumption) + '</b></div>';
       renderBars("dashQ", d.top_questions, q => q.question + "（" + q.hit_count + "）", q => q.hit_count);
       renderBars("dashU", d.hot_units, u => "单元#" + u.unit_id, u => u.access_count);
       const t = document.getElementById("dashT");
-      t.innerHTML = d.response_time_trend.map(r => r.date + "：" + r.avg_ms + "ms").join("<br>");
+      t.innerHTML = d.response_time_trend.map(r => esc(r.date) + "：" + esc(r.avg_ms) + "ms").join("<br>");
     }
 
     function renderBars(id, items, label, value) {
@@ -565,8 +626,8 @@
       d.forEach(f => {
         const card = document.createElement("div");
         card.className = "card";
-        card.innerHTML = "<b>#" + f.id + " " + f.question + "</b>（频次 " + f.hit_count + "）<br>" +
-          "<textarea id='ans" + f.id + "' placeholder='编辑答案'>" + (f.answer || "") + "</textarea><br>" +
+        card.innerHTML = "<b>#" + f.id + " " + esc(f.question) + "</b>（频次 " + f.hit_count + "）<br>" +
+          "<textarea id='ans" + f.id + "' placeholder='编辑答案'>" + esc(f.answer || "") + "</textarea><br>" +
           "<button class='btn-ok' onclick=\"review(" + f.id + ",'approve')\">通过并发布</button> " +
           "<button class='btn-no' onclick=\"review(" + f.id + ",'reject')\">拒绝</button>";
         box.appendChild(card);
@@ -587,8 +648,8 @@
       tbody.innerHTML = "";
       d.forEach(g => {
         const tr = document.createElement("tr");
-        tr.innerHTML = "<td>" + g.question_pattern + "</td><td>" + g.ask_count + "</td><td>" +
-          (g.last_asked_at || "") + "</td><td>" + g.status + "</td>";
+        tr.innerHTML = "<td>" + esc(g.question_pattern) + "</td><td>" + g.ask_count + "</td><td>" +
+          esc(g.last_asked_at || "") + "</td><td>" + esc(g.status) + "</td>";
         tbody.appendChild(tr);
       });
     }
@@ -599,8 +660,8 @@
       tbody.innerHTML = "";
       d.forEach(a => {
         const tr = document.createElement("tr");
-        tr.innerHTML = "<td>" + a.id + "</td><td>用户#" + a.user_id + "</td><td>" + a.action + "</td><td>" +
-          a.resource_type + ":" + a.resource_id + "</td><td>" + (a.created_at || "") + "</td>";
+        tr.innerHTML = "<td>" + a.id + "</td><td>用户#" + a.user_id + "</td><td>" + esc(a.action) + "</td><td>" +
+          esc(a.resource_type) + ":" + esc(a.resource_id) + "</td><td>" + esc(a.created_at || "") + "</td>";
         tbody.appendChild(tr);
       });
     }
@@ -645,8 +706,8 @@
       orgUsers.forEach(u => {
         const tr = document.createElement("tr");
         const isMe = u.id === (window.me && window.me.id);
-        tr.innerHTML = "<td>" + u.id + "</td><td>" + u.username + "</td><td>" + (u.display_name || "") + "</td><td>" +
-          deptName(u.department_id) + "</td><td>" + (u.roles || []).join(",") + "</td><td>" + u.status + "</td><td>" +
+        tr.innerHTML = "<td>" + u.id + "</td><td>" + esc(u.username) + "</td><td>" + esc(u.display_name || "") + "</td><td>" +
+          esc(deptName(u.department_id)) + "</td><td>" + esc((u.roles || []).join(",")) + "</td><td>" + esc(u.status) + "</td><td>" +
           "<button onclick='editUser(" + u.id + ")'>编辑</button> " +
           "<button onclick='resetPwd(" + u.id + ")'>重置密码</button> " +
           "<button onclick='toggleUser(" + u.id + ")'>" + (u.status === "active" ? "停用" : "启用") + "</button></td>";
@@ -728,8 +789,8 @@
       orgRoles.forEach(r => {
         const tr = document.createElement("tr");
         const perms = (r.permissions || []).join(", ");
-        tr.innerHTML = "<td>" + r.id + "</td><td>" + r.role_name + "</td><td>" + r.role_code + "</td><td>" +
-          (r.description || "") + "</td><td>" + perms + "</td><td>" +
+        tr.innerHTML = "<td>" + r.id + "</td><td>" + esc(r.role_name) + "</td><td>" + esc(r.role_code) + "</td><td>" +
+          esc(r.description || "") + "</td><td>" + esc(perms) + "</td><td>" +
           "<button onclick='openPerm(" + r.id + ")'>权限</button> " +
           "<button onclick='editRole(" + r.id + ")'>编辑</button> " +
           "<button onclick='delRole(" + r.id + ")'>删除</button></td>";
@@ -800,7 +861,7 @@
       const tb = document.getElementById("deptBody"); tb.innerHTML = "";
       orgDepts.forEach(d => {
         const tr = document.createElement("tr");
-        tr.innerHTML = "<td>" + d.id + "</td><td>" + d.name + "</td><td>" + deptName(d.parent_id) + "</td><td>" +
+        tr.innerHTML = "<td>" + d.id + "</td><td>" + esc(d.name) + "</td><td>" + esc(deptName(d.parent_id)) + "</td><td>" +
           "<button onclick='editDept(" + d.id + ")'>编辑</button> " +
           "<button onclick='delDept(" + d.id + ")'>删除</button></td>";
         tb.appendChild(tr);

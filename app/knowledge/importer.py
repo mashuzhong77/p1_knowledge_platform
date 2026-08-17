@@ -47,7 +47,10 @@ def import_text(
     embedder = get_embedder()
     store = get_vectorstore()
     texts = [u["content"] for u in units]
-    vectors = embedder.embed(texts)
+    try:
+        vectors = embedder.embed(texts)
+    except Exception as e:  # noqa: BLE001
+        raise RuntimeError(f"远程向量服务不可用：{e}") from e
     ids: list[str] = []
     titles = []
     with db() as conn:

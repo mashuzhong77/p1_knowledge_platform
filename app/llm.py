@@ -8,14 +8,21 @@ logger = logging.getLogger(__name__)
 
 
 def chat_completion(prompt: str, json_mode: bool = False, timeout: int = 30) -> str:
-    if not settings.deepseek_api_key:
-        logger.warning("chat_completion skipped: deepseek_api_key is empty")
+    if not settings.effective_llm_api_key:
+        logger.warning("chat_completion skipped: llm_api_key is empty")
         return ""
+    if (settings.llm_base_url and not settings.llm_model) or (
+        settings.llm_model and not settings.llm_base_url
+    ):
+        logger.warning(
+            "LLM_BASE_URL/LLM_MODEL 未同时配置：effective_llm_model/base_url 将回退到 deepseek_*，"
+            "若目标地址是 vLLM 会请求 404 并静默离线。请 LLM_* 三个都填。"
+        )
     try:
         import httpx
 
         payload = {
-            "model": settings.deepseek_model,
+            "model": settings.effective_llm_model,
             "messages": [{"role": "user", "content": prompt}],
             "temperature": 0.1,
             "stream": False,
@@ -23,8 +30,8 @@ def chat_completion(prompt: str, json_mode: bool = False, timeout: int = 30) -> 
         if json_mode:
             payload["response_format"] = {"type": "json_object"}
         resp = httpx.post(
-            f"{settings.deepseek_base_url}/chat/completions",
-            headers={"Authorization": f"Bearer {settings.deepseek_api_key}"},
+            f"{settings.effective_llm_base_url}/chat/completions",
+            headers={"Authorization": f"Bearer {settings.effective_llm_api_key}"},
             json=payload,
             timeout=timeout,
         )
