@@ -22,3 +22,7 @@ deploy/deploy_server.sh
 # ===== 本地验证产物（verify_e2e.py 含本机演示密码，仅本地使用） =====
 verify.log
 verify_e2e.py
+
+# ===== 本地验证脚本与部署就绪报告（含本机密码 / key 描述，仅本地保留，绝不提交） =====
+scripts/smoke_check.py
+deploy/DEPLOY_READINESS_REPORT.md
