@@ -48,7 +48,7 @@ class Settings(BaseSettings):
     cors_origins: list[str] = []  # env 传 JSON：CORS_ORIGINS=["http://127.0.0.1:8000"]
     max_upload_size_mb: int = 50  # 现有最大文件 21.2MB，默认 50 覆盖
     max_text_chars: int = 200_000
-    enable_docs: bool = True
+    enable_docs: bool = False  # 生产环境默认关闭 /docs /redoc /openapi.json；开发时 .env 设 ENABLE_DOCS=true
     force_https_headers: bool = False  # 置于 TLS 反向代理后时置 true（启用 HSTS）
 
     # ===== 生效配置（LLM_* 优先，未填回退 deepseek_* 遗留别名） =====

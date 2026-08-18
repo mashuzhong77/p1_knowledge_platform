@@ -153,10 +153,12 @@ CREATE INDEX IF NOT EXISTS idx_auth_sessions_expires_at ON auth_sessions(expires
 
 
 def get_connection() -> sqlite3.Connection:
-    """创建 SQLite 连接（row_factory=Row）。"""
+    """创建 SQLite 连接（row_factory=Row，WAL 模式，busy_timeout 5s）。"""
     settings.db_path.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(str(settings.db_path), check_same_thread=False)
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode = WAL")       # 并发读不阻塞写，写不阻塞读
+    conn.execute("PRAGMA busy_timeout = 5000")       # 遇锁等待 5s 而非立即报错
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
 

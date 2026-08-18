@@ -1,0 +1,15 @@
+.git
+.venv
+.env
+.env.prod
+deploy/.env.prod
+data/
+logs/
+tests/
+__pycache__
+*.pyc
+.pytest_cache
+uv.lock
+*.egg-info
+.mypy_cache
+.ruff_cache

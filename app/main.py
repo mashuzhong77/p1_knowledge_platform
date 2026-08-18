@@ -18,7 +18,7 @@ from .api import (
     settlement_routes,
 )
 from .config import settings
-from .database import init_db
+from .database import get_connection, init_db
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 STATIC_DIR = BASE_DIR / "web" / "static"
@@ -84,7 +84,16 @@ def create_app() -> FastAPI:
 
     @app.get("/health")
     def health():
-        return {"status": "ok"}
+        checks = {"db": "ok"}
+        try:
+            conn = get_connection()
+            conn.execute("SELECT 1").fetchone()
+            conn.close()
+        except Exception as e:
+            checks["db"] = f"fail: {e}"
+            from fastapi.responses import JSONResponse
+            return JSONResponse(status_code=503, content={"status": "unhealthy", "checks": checks})
+        return {"status": "ok", "checks": checks}
 
     return app
 

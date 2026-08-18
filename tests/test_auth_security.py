@@ -17,9 +17,9 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 @pytest.fixture(autouse=True)
 def _reset_rate_limit():
-    ratelimit._TIMESTAMPS.clear()
+    ratelimit._BUCKETS.clear()
     yield
-    ratelimit._TIMESTAMPS.clear()
+    ratelimit._BUCKETS.clear()
 
 
 @pytest.fixture()

@@ -1,6 +1,6 @@
 """认证接口：登录 / 当前用户 / 登出 / 修改密码。"""
 
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException, Request
 
 from ..auth import (
     _bearer_token,
@@ -12,14 +12,16 @@ from ..auth import (
     validate_new_password,
 )
 from ..models import ChangePasswordRequest, LoginRequest
-from ..ratelimit import apply_rate_limit
+from ..ratelimit import _client_ip, apply_rate_limit, check_rate_limit
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 
 @router.post("/login")
-def do_login(body: LoginRequest):
-    apply_rate_limit(max_requests=60, window_seconds=60)  # R9：登录限流
+def do_login(body: LoginRequest, request: Request):
+    ip = _client_ip(request)
+    check_rate_limit(f"login:{ip}", max_requests=10, window_seconds=60)
+    check_rate_limit(f"login:user:{body.username}", max_requests=5, window_seconds=60)
     result = login(body.username, body.password)
     if result is None:
         raise HTTPException(status_code=401, detail="用户名或密码错误")
@@ -45,7 +47,7 @@ def do_change_password(
     user: dict = Depends(require_session),
     authorization: str | None = Header(default=None),
 ):
-    apply_rate_limit(max_requests=5, window_seconds=60, bucket="change_pwd")
+    apply_rate_limit(max_requests=5, window_seconds=60, bucket=f"change_pwd:{user['id']}")
     if not check_current_password(user["id"], body.current_password):
         raise HTTPException(status_code=400, detail="当前密码错误")
     policy_err = validate_new_password(body.new_password, body.current_password)

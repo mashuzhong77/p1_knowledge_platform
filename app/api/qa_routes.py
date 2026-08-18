@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import threading
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
@@ -26,27 +27,39 @@ async def chat_stream(body: AskRequest, user: dict = Depends(require_user)):
         queue: asyncio.Queue = asyncio.Queue()
         loop = asyncio.get_running_loop()
         holder: dict = {}
+        cancel_event = threading.Event()  # 客户端断开时通知后台线程停止
 
         def emit(delta: str):
+            if cancel_event.is_set():
+                return
             queue.put_nowait(delta)  # asyncio.Queue.put_nowait 线程安全
 
         def run():
-            holder["result"] = ask(body.question, user, body.session_id or "", emit_delta=emit)
-            queue.put_nowait(None)  # 结束哨兵
+            try:
+                holder["result"] = ask(body.question, user, body.session_id or "", emit_delta=emit)
+            except Exception:
+                holder["result"] = {"evidence": [], "blocked": [], "model": "error"}
+            finally:
+                queue.put_nowait(None)  # 结束哨兵
 
-        loop.run_in_executor(None, run)
-        while True:
-            delta = await queue.get()
-            if delta is None:
-                break
-            yield _sse({"event": "message_delta", "delta": delta})
+        future = loop.run_in_executor(None, run)
+        try:
+            while True:
+                delta = await queue.get()
+                if delta is None:
+                    break
+                yield _sse({"event": "message_delta", "delta": delta})
 
-        result = holder["result"]
-        yield _sse({"event": "evidence", "evidence": result.get("evidence", [])})
-        yield _sse({"event": "blocked", "blocked": result.get("blocked", [])})
-        yield _sse({"event": "model", "model": result.get("model", "")})
-        yield _sse({"event": "progress", "status": "success", "step": "完成"})
-        yield _sse({"event": "task_status", "task_status": "success"})
-        yield _sse({"event": "done"})
+            result = holder.get("result", {})
+            yield _sse({"event": "evidence", "evidence": result.get("evidence", [])})
+            yield _sse({"event": "blocked", "blocked": result.get("blocked", [])})
+            yield _sse({"event": "model", "model": result.get("model", "")})
+            yield _sse({"event": "progress", "status": "success", "step": "完成"})
+            yield _sse({"event": "task_status", "task_status": "success"})
+            yield _sse({"event": "done"})
+        except asyncio.CancelledError:
+            # 客户端断开连接 → 通知后台线程停止
+            cancel_event.set()
+            raise
 
     return StreamingResponse(gen(), media_type="text/event-stream")

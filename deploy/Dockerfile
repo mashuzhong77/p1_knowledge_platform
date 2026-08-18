@@ -26,6 +26,11 @@ COPY run.py /app/run.py
 
 RUN mkdir -p /app/data/knowledge /app/data/uploads /app/data/vectors /app/logs
 
+# 非 root 用户运行，降低容器突破后的权限风险
+RUN useradd -r -s /bin/false -d /app appuser \
+    && chown -R appuser:appuser /app
+USER appuser
+
 EXPOSE 8000
 
 CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1", "--proxy-headers", "--forwarded-allow-ips=*"]

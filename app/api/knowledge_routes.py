@@ -95,7 +95,8 @@ def import_text_api(body: ImportTextRequest, user: dict = Depends(require_user))
         )
     except RuntimeError as e:
         raise HTTPException(status_code=502, detail=str(e))
-    audit.log_action(user["id"], "import", "knowledge_unit", ",".join(map(str, result.get("unit_ids", []))))
+    with db() as conn:
+        audit.log_action(user["id"], "import", "knowledge_unit", ",".join(map(str, result.get("unit_ids", []))), conn=conn)
     return result
 
 
@@ -175,7 +176,8 @@ async def import_file_api(
             scope_list,
             source_name=safe,
         )
-        audit.log_action(user["id"], "import_file", "file", safe, {"task_id": task_id})
+        with db() as conn:
+            audit.log_action(user["id"], "import_file", "file", safe, {"task_id": task_id}, conn=conn)
         task_ids.append(task_id)
     return {"code": 200, "task_ids": task_ids, "message": f"已提交 {len(task_ids)} 个导入任务"}
 
@@ -250,12 +252,20 @@ def delete_units_api(body: DeleteUnitsRequest, user: dict = Depends(require_user
     if not has_permission(user, "knowledge:delete"):
         raise HTTPException(status_code=403, detail="缺少删除权限")
     with db() as conn:
+        # 逐个校验数据权限，防止越权删除超出自己范围的知识单元
+        for uid in body.unit_ids:
+            u = _load(conn, uid)
+            _check_access(u, user)
         deleted = crud.delete_units(conn, body.unit_ids)
+        audit.log_action(
+            user["id"], "delete_units", "knowledge_unit",
+            ",".join(map(str, body.unit_ids)),
+            {"deleted": deleted}, conn=conn,
+        )
     try:
         get_vectorstore().delete(deleted)
     except Exception:  # noqa: BLE001
         pass
-    audit.log_action(user["id"], "delete_units", "knowledge_unit", ",".join(map(str, body.unit_ids)), {"deleted": deleted})
     return {"deleted": deleted}
 
 
@@ -315,5 +325,6 @@ def rollback_api(unit_id: int, body: RollbackRequest, user: dict = Depends(requi
 @router.get("/units/{unit_id}/versions")
 def versions_api(unit_id: int, user: dict = Depends(require_user)):
     with get_connection() as conn:
-        _load(conn, unit_id)
+        u = _load(conn, unit_id)
+        _check_access(u, user)
         return crud.list_versions(conn, unit_id)
