@@ -2,904 +2,414 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>知识库管理平台</title>
-  <style>
-    body { font-family: "Microsoft YaHei", sans-serif; margin: 0; background: #f5f6fa; color: #333; }
-    header { background: #2f54eb; color: #fff; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; }
-    nav { background: #fff; padding: 8px 20px; border-bottom: 1px solid #eee; position: sticky; top: 0; }
-    nav button { margin-right: 8px; padding: 6px 14px; border: 1px solid #d9d9d9; background: #fff; cursor: pointer; border-radius: 4px; }
-    nav button:hover { border-color: #2f54eb; color: #2f54eb; }
-    section { padding: 20px; }
-    input, textarea, button, select { font-size: 14px; padding: 6px 10px; margin: 4px; }
-    textarea { width: 90%; height: 90px; vertical-align: top; }
-    table { border-collapse: collapse; width: 100%; background: #fff; }
-    th, td { border: 1px solid #eee; padding: 6px 10px; text-align: left; font-size: 13px; vertical-align: top; }
-    .card { background: #fff; border: 1px solid #eee; border-radius: 6px; padding: 14px; margin-bottom: 12px; }
-    .perm-grp { margin: 10px 0; }
-    .perm-grp b { display: block; margin-bottom: 4px; }
-    .perm-grp label { display: inline-block; margin: 2px 12px 2px 0; font-size: 13px; }
-    .cards { display: flex; flex-wrap: wrap; gap: 12px; }
-    .metric { flex: 1; min-width: 140px; background: #fff; border: 1px solid #eee; border-radius: 6px; padding: 14px; }
-    .metric b { font-size: 24px; color: #2f54eb; }
-    .bar { background: #2f54eb; height: 14px; border-radius: 3px; min-width: 2px; }
-    .bar-row { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
-    .bar-row span { width: 220px; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    #answer { background: #fff; border: 1px solid #eee; padding: 12px; margin-top: 10px; white-space: pre-wrap; min-height: 80px; }
-    pre { background: #fff; padding: 12px; border: 1px solid #eee; white-space: pre-wrap; }
-    #loginBox, #pwdBox { max-width: 320px; margin: 120px auto; background: #fff; padding: 24px; border-radius: 8px; }
-    #err, #pwdErr { color: #cf1322; }
-    .btn-ok { background: #52c41a; border: none; color: #fff; border-radius: 4px; cursor: pointer; }
-    .btn-no { background: #ff4d4f; border: none; color: #fff; border-radius: 4px; cursor: pointer; }
-    .muted { color: #999; font-size: 12px; }
-    .evidence-panel { margin-top: 8px; border-top: 1px dashed #d9d9d9; padding-top: 8px; }
-    .evidence-title { font-weight: bold; margin-bottom: 4px; }
-    .evidence-item { font-size: 13px; margin: 2px 0; }
-    .evidence-n { color: #2f54eb; }
-    .evidence-score { color: #999; }
-    .low-conf { color: #cf1322; font-size: 13px; margin: 6px 0; }
-  </style>
+  <link rel="stylesheet" href="/static/css/style.css" />
 </head>
 <body>
-  <div id="loginBox">
-    <h2>知识库管理平台</h2>
-    <input id="u" placeholder="用户名" /><br />
-    <input id="p" type="password" placeholder="密码" /><br />
-    <button onclick="login()">登录</button>
-    <span id="err"></span>
+
+  <!-- ============ 登录 ============ -->
+  <div id="loginBox" class="auth-wrap">
+    <div class="auth-card">
+      <div class="brand" style="justify-content:center;margin-bottom:8px;">
+        <span class="brand-mark">R</span>
+        <span class="brand-name"><span class="sub">RAGreen</span>知识库</span>
+      </div>
+      <h2>欢迎登录</h2>
+      <p class="auth-sub">请输入您的账号与密码</p>
+      <label>用户名</label>
+      <input id="u" type="text" placeholder="请输入用户名" autocomplete="username" />
+      <label>密码</label>
+      <input id="p" type="password" placeholder="请输入密码" autocomplete="current-password" />
+      <button class="btn btn-primary btn-block" onclick="login()">登 录</button>
+      <span id="err"></span>
+    </div>
   </div>
 
-  <div id="pwdBox" style="display:none">
-    <h2>首次登录，请修改初始密码</h2>
-    <input id="cur_pwd" type="password" placeholder="当前密码" /><br />
-    <input id="new_pwd" type="password" placeholder="新密码（至少 8 位）" /><br />
-    <input id="new_pwd2" type="password" placeholder="确认新密码" /><br />
-    <button onclick="changePassword()">提交</button>
-    <button onclick="logout()">退出登录</button>
-    <span id="pwdErr"></span>
+  <!-- ============ 首次登录强制改密 ============ -->
+  <div id="pwdBox" class="auth-wrap" style="display:none">
+    <div class="auth-card">
+      <h2>请修改初始密码</h2>
+      <p class="auth-sub">首次登录需要修改密码后继续</p>
+      <label>当前密码</label>
+      <input id="cur_pwd" type="password" autocomplete="current-password" />
+      <label>新密码（至少 8 位）</label>
+      <input id="new_pwd" type="password" autocomplete="new-password" />
+      <label>确认新密码</label>
+      <input id="new_pwd2" type="password" autocomplete="new-password" />
+      <button class="btn btn-primary btn-block" onclick="changePassword()">提交</button>
+      <button class="btn btn-block" style="margin-top:8px;" onclick="logout()">退出登录</button>
+      <span id="pwdErr"></span>
+    </div>
   </div>
 
+  <!-- ============ 主应用 ============ -->
   <div id="app" style="display:none">
-    <header>
-      <span>知识库管理平台</span>
-      <span id="who"></span>
-      <button onclick="logout()">退出</button>
+
+    <!-- 顶部 Header：薄白条 + 绿色 Logo -->
+    <header class="app-header">
+      <div class="brand">
+        <span class="brand-mark">R</span>
+        <span class="brand-name"><span class="sub">RAGreen</span>知识库</span>
+      </div>
+      <div class="header-right">
+        <span class="user-chip"><b id="who">系统管理员</b></span>
+        <button class="btn-switch">切换</button>
+        <button class="btn btn-sm" onclick="logout()">退出</button>
+      </div>
     </header>
-    <nav>
-      <button onclick="show('units')">知识库</button>
-      <button onclick="show('versions')">版本管理</button>
-      <button onclick="show('qa')">AI 问答</button>
-      <button onclick="show('dash'); loadDash()">看板</button>
-      <button onclick="show('faq'); loadFaq()">FAQ 审核</button>
-      <button onclick="show('gaps'); loadGaps()">知识缺口</button>
-      <button onclick="show('audit'); loadAudit()">审计日志</button>
-      <button id="navOrg" onclick="show('org'); loadOrg()">组织架构</button>
+
+    <!-- 文字型 Tab 导航 -->
+    <nav class="app-tabs">
+      <div class="tab-item active" data-tab="units"     onclick="show('units')"><span class="dot"></span>知识库</div>
+      <div class="tab-item"        data-tab="versions"  onclick="show('versions')"><span class="dot"></span>版本管理</div>
+      <div class="tab-item"        data-tab="qa"        onclick="show('qa')"><span class="dot"></span>AI 问答</div>
+      <div class="tab-item"        data-tab="dash"      onclick="show('dash'); loadDash()"><span class="dot"></span>看板</div>
+      <div class="tab-item"        data-tab="faq"       onclick="show('faq'); loadFaq()"><span class="dot"></span>FAQ 审核</div>
+      <div class="tab-item"        data-tab="gaps"      onclick="show('gaps'); loadGaps()"><span class="dot"></span>知识缺口</div>
+      <div class="tab-item"        data-tab="audit"     onclick="show('audit'); loadAudit()"><span class="dot"></span>审计日志</div>
+      <div class="tab-item"        data-tab="org"       id="navOrg" onclick="show('org'); loadOrg()"><span class="dot"></span>组织架构</div>
     </nav>
 
-    <section id="units" class="tab">
-      <h3>知识单元</h3>
-      <textarea id="txt" placeholder="粘贴 Markdown/文本，点击导入"></textarea><br />
-      <button onclick="importText()">导入文本</button>
-      <span class="muted">批量导入：</span>
-      <input id="files" type="file" multiple accept=".md,.txt,.pdf,.docx" />
-      <button onclick="uploadFiles()">批量上传导入</button>
-      <div id="uploadMsg" class="muted"></div>
-      <table>
-        <thead><tr><th>ID</th><th>标题</th><th>分类</th><th>数据权限</th><th>状态</th><th>版本</th><th>操作</th></tr></thead>
-        <tbody id="unitBody"></tbody>
-      </table>
-      <div id="unitPermPanel" class="card" style="display:none">
-        <div id="unitPermTitle">配置数据权限</div>
-        <label><input type="checkbox" id="permGlobal" /> 全局公开（所有人可访问）</label>
-        <div class="perm-grp"><b>部门</b><div id="permDept"></div></div>
-        <div class="perm-grp"><b>角色</b><div id="permRole"></div></div>
-        <div class="perm-grp"><b>个人</b><div id="permUser"></div></div>
-        <button class="btn-ok" onclick="saveUnitPerm()">保存权限</button>
-        <button onclick="document.getElementById('unitPermPanel').style.display='none'">关闭</button>
-        <span id="unitPermMsg" class="muted"></span>
-      </div>
-    </section>
+    <main class="app-main">
 
-    <section id="versions" class="tab" style="display:none">
-      <h3>版本管理</h3>
-      <input id="verUnit" type="number" placeholder="知识单元 ID" />
-      <button onclick="loadVersions()">查看版本</button>
-      <table>
-        <thead><tr><th>ID</th><th>版本</th><th>状态</th><th>标题</th><th>更新时间</th><th>操作</th></tr></thead>
-        <tbody id="verBody"></tbody>
-      </table>
-      <div id="verMsg" class="muted"></div>
-    </section>
-
-    <section id="qa" class="tab" style="display:none">
-      <h3>AI 问答（混合检索 + SSE 流式）</h3>
-      <input id="q" style="width:60%" placeholder="输入问题，例如：什么是绿色建筑？" />
-      <button onclick="ask()">提问</button>
-      <div id="answer">等待提问……</div>
-    </section>
-
-    <section id="dash" class="tab" style="display:none">
-      <h3>数据看板</h3>
-      <div id="dashCards" class="cards"></div>
-      <div class="card"><h4>常见问题 TOP</h4><div id="dashQ"></div></div>
-      <div class="card"><h4>知识单元热度 TOP</h4><div id="dashU"></div></div>
-      <div class="card"><h4>响应时间趋势（ms）</h4><div id="dashT"></div></div>
-    </section>
-
-    <section id="faq" class="tab" style="display:none">
-      <h3>FAQ 审核</h3>
-      <div id="faqData"></div>
-    </section>
-
-    <section id="gaps" class="tab" style="display:none">
-      <h3>知识缺口</h3>
-      <table><thead><tr><th>问题</th><th>提问频次</th><th>最近提问</th><th>状态</th></tr></thead><tbody id="gapsBody"></tbody></table>
-    </section>
-
-    <section id="audit" class="tab" style="display:none">
-      <h3>审计日志</h3>
-      <table><thead><tr><th>ID</th><th>用户</th><th>动作</th><th>资源</th><th>时间</th></tr></thead><tbody id="auditBody"></tbody></table>
-    </section>
-
-    <section id="org" class="tab" style="display:none">
-      <h3>组织架构与权限管理</h3>
-      <div class="org-tabs">
-        <button onclick="orgTab('users')">用户管理</button>
-        <button onclick="orgTab('roles')">角色管理</button>
-        <button onclick="orgTab('depts')">部门管理</button>
-      </div>
-
-      <div id="orgUsers">
-        <button onclick="showUserForm()">+ 新增用户</button>
-        <div id="userForm" class="card" style="display:none">
-          <div id="userFormTitle">新增用户</div>
-          <input id="u_username" placeholder="用户名" />
-          <input id="u_password" type="password" placeholder="密码（编辑时留空=不改）" />
-          <input id="u_display" placeholder="显示名" />
-          <select id="u_dept"><option value="">选择部门</option></select>
-          <select id="u_role"><option value="">选择角色</option></select>
-          <select id="u_status">
-            <option value="active">启用</option>
-            <option value="disabled">停用</option>
-          </select>
-          <button class="btn-ok" onclick="saveUser()">保存</button>
-          <button onclick="cancelUserForm()">取消</button>
-          <span id="userFormMsg" class="muted"></span>
+      <!-- 知识单元 -->
+      <section id="units" class="tab active">
+        <div class="page-head">
+          <h2 class="page-title">知识单元</h2>
+          <p class="page-desc">管理知识库内容，支持 Markdown/文本、文件批量上传与四类数据权限配置。</p>
         </div>
-        <table>
-          <thead><tr><th>ID</th><th>用户名</th><th>显示名</th><th>部门</th><th>角色</th><th>状态</th><th>操作</th></tr></thead>
-          <tbody id="userBody"></tbody>
-        </table>
-      </div>
 
-      <div id="orgRoles" style="display:none">
-        <button onclick="showRoleForm()">+ 新增角色</button>
-        <div id="roleForm" class="card" style="display:none">
-          <div id="roleFormTitle">新增角色</div>
-          <input id="r_name" placeholder="角色名称" />
-          <input id="r_code" placeholder="角色编码（如 editor）" />
-          <input id="r_desc" placeholder="描述" />
-          <button class="btn-ok" onclick="saveRole()">保存</button>
-          <button onclick="cancelRoleForm()">取消</button>
-        </div>
-        <table>
-          <thead><tr><th>ID</th><th>名称</th><th>编码</th><th>描述</th><th>权限</th><th>操作</th></tr></thead>
-          <tbody id="roleBody"></tbody>
-        </table>
-        <div id="permPanel" class="card" style="display:none">
-          <div id="permTitle">配置权限</div>
-          <div id="permChecks"></div>
-          <button class="btn-ok" onclick="savePerm()">保存权限</button>
-          <button onclick="document.getElementById('permPanel').style.display='none'">关闭</button>
-        </div>
-      </div>
+        <!-- 4 个指标卡：知识文档 / 已发布 / 草稿 / 已归档 -->
+        <div class="metrics" id="metricsRow">
+          <div class="metric">
+            <div class="metric-head">
+              <span class="metric-label">知识文档</span>
+              <span class="metric-icon" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v17H6.5A2.5 2.5 0 0 0 4 21.5V4.5z"/><path d="M4 21.5A2.5 2.5 0 0 1 6.5 19H20"/></svg>
+              </span>
+            </div>
+            <div class="metric-num" id="metricsKnowledge">—</div>
+            <div class="metric-foot"><span class="up">↑</span><span id="metricsKnowledgeTrend">较昨日 +0</span></div>
+          </div>
 
-      <div id="orgDepts" style="display:none">
-        <button onclick="showDeptForm()">+ 新增部门</button>
-        <div id="deptForm" class="card" style="display:none">
-          <div id="deptFormTitle">新增部门</div>
-          <input id="d_name" placeholder="部门名称" />
-          <select id="d_parent"><option value="">无上级（顶级）</option></select>
-          <button class="btn-ok" onclick="saveDept()">保存</button>
-          <button onclick="cancelDeptForm()">取消</button>
+          <div class="metric">
+            <div class="metric-head">
+              <span class="metric-label">已发布</span>
+              <span class="metric-icon t-warn" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+              </span>
+            </div>
+            <div class="metric-num t-warn" id="metricsPublished">—</div>
+            <div class="metric-foot"><span class="up">↑</span><span id="metricsPublishedTrend">较昨日 +0</span></div>
+          </div>
+
+          <div class="metric">
+            <div class="metric-head">
+              <span class="metric-label">草稿</span>
+              <span class="metric-icon t-purple" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+              </span>
+            </div>
+            <div class="metric-num t-purple" id="metricsDraft">—</div>
+            <div class="metric-foot"><span class="down">↓</span><span id="metricsDraftTrend">较昨日 -0</span></div>
+          </div>
+
+          <div class="metric">
+            <div class="metric-head">
+              <span class="metric-label">已归档</span>
+              <span class="metric-icon t-info" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/><path d="M3 7v12a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2H5a2 2 0 0 1-2-2z" fill="currentColor" fill-opacity="0.04"/></svg>
+              </span>
+            </div>
+            <div class="metric-num t-info" id="metricsArchived">—</div>
+            <div class="metric-foot"><span class="down">↓</span><span id="metricsArchivedTrend">较昨日 -0</span></div>
+          </div>
         </div>
-        <table>
-          <thead><tr><th>ID</th><th>名称</th><th>上级</th><th>操作</th></tr></thead>
-          <tbody id="deptBody"></tbody>
-        </table>
-      </div>
-    </section>
+
+        <!-- 导入知识库 -->
+        <div class="card">
+          <div class="card-head">
+            <h3 class="card-title">导入知识库</h3>
+          </div>
+          <textarea id="txt" placeholder="粘贴 Markdown/文本，点击导入。&#10;支持 Markdown 标准语法，系统会自动提取关键信息生成知识单元。"></textarea>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;flex-wrap:wrap;gap:8px;">
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+              <button class="btn btn-primary" onclick="importText()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                导入知识
+              </button>
+              <input id="files" type="file" multiple accept=".md,.txt,.pdf,.docx" style="display:none" />
+              <button class="btn" onclick="document.getElementById('files').click()">批量导入</button>
+              <button class="btn btn-ghost" onclick="resetUnits()">重置知识库</button>
+              <span id="uploadMsg" class="muted"></span>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <button class="btn btn-ghost" onclick="downloadTemplate()">下载模板</button>
+              <button class="btn btn-primary" onclick="document.getElementById('files').click()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>
+                批量上传导入
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 搜索 / 筛选 -->
+        <div class="card">
+          <div class="card-head">
+            <h3 class="card-title">知识单元列表</h3>
+            <div class="card-actions">
+              <span class="search-input">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+                <input id="searchKey" type="text" placeholder="搜索 ID / 标题 / 分类" oninput="onSearchInput()" />
+              </span>
+              <select id="filterStatus" onchange="onSearchInput()" style="padding:6px 10px;">
+                <option value="">全部状态</option>
+                <option value="published">已发布</option>
+                <option value="draft">草稿</option>
+                <option value="archived">已归档</option>
+              </select>
+              <select id="filterDomain" onchange="onSearchInput()" style="padding:6px 10px;">
+                <option value="">全部分类</option>
+                <option value="绿建/双碳">绿建/双碳</option>
+                <option value="绿建">绿建</option>
+                <option value="双碳">双碳</option>
+                <option value="测试">测试</option>
+              </select>
+              <button class="btn btn-ghost" onclick="loadUnits().then(renderAll)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>
+                刷新
+              </button>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th><th>标题</th><th>分类</th><th>数据权限</th><th>状态</th><th>版本</th><th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="unitBody"></tbody>
+            </table>
+          </div>
+          <div class="pager">
+            <div id="pagerInfo" class="muted">共 0 条</div>
+            <div class="pager-right">
+              <button class="pager-btn" id="pgFirst" onclick="goPage(1)">«</button>
+              <button class="pager-btn" id="pgPrev"  onclick="goPage(state.page - 1)">‹</button>
+              <span id="pgPages" style="display:inline-flex;gap:4px;"></span>
+              <button class="pager-btn" id="pgNext"  onclick="goPage(state.page + 1)">›</button>
+              <button class="pager-btn" id="pgLast"  onclick="goPage(state.totalPages)">»</button>
+              <select id="pgSize" onchange="onPageSizeChange()" style="height:28px;padding:0 6px;">
+                <option value="10">10 条/页</option>
+                <option value="20">20 条/页</option>
+                <option value="50">50 条/页</option>
+              </select>
+              <span class="muted">跳至</span>
+              <input id="pgJump" class="pager-input" type="number" min="1" />
+              <button class="pager-btn" onclick="jumpToPage()">确定</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 单元数据权限弹层 -->
+        <div id="unitPermPanel" class="card" style="display:none">
+          <div id="unitPermTitle" class="h3like" style="font-size:15px;font-weight:500;margin-bottom:10px;"></div>
+          <label><input type="checkbox" id="permGlobal" /> 全局公开（所有人可访问）</label>
+          <div class="perm-grp"><b>部门</b><div id="permDept"></div></div>
+          <div class="perm-grp"><b>角色</b><div id="permRole"></div></div>
+          <div class="perm-grp"><b>个人</b><div id="permUser"></div></div>
+          <button class="btn btn-primary" onclick="saveUnitPerm()">保存权限</button>
+          <button class="btn" onclick="document.getElementById('unitPermPanel').style.display='none'">关闭</button>
+          <span id="unitPermMsg" class="muted"></span>
+        </div>
+      </section>
+
+      <!-- 版本管理 -->
+      <section id="versions" class="tab">
+        <div class="page-head">
+          <h2 class="page-title">版本管理</h2>
+          <p class="page-desc">查看与回滚知识单元的历史版本。</p>
+        </div>
+        <div class="card">
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">
+            <input id="verUnit" type="number" placeholder="知识单元 ID" />
+            <button class="btn btn-primary" onclick="loadVersions()">查看版本</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>ID</th><th>版本</th><th>状态</th><th>标题</th><th>更新时间</th><th>操作</th></tr>
+              </thead>
+              <tbody id="verBody"></tbody>
+            </table>
+          </div>
+          <div id="verMsg" class="muted" style="margin-top:8px;"></div>
+        </div>
+      </section>
+
+      <!-- AI 问答 -->
+      <section id="qa" class="tab">
+        <div class="page-head">
+          <h2 class="page-title">AI 问答</h2>
+          <p class="page-desc">混合检索 + HyDE + RRF 融合 + 可选 rerank，证据链与置信度全透明。</p>
+        </div>
+        <div class="card">
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input id="q" style="flex:1" type="text" placeholder="输入问题，例如：什么是绿色建筑？" />
+            <button class="btn btn-primary" onclick="ask()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22 11 13 2 9 22 2z"/></svg>
+              提问
+            </button>
+          </div>
+          <div id="answer">等待提问……</div>
+        </div>
+      </section>
+
+      <!-- 看板 -->
+      <section id="dash" class="tab">
+        <div class="page-head">
+          <h2 class="page-title">数据看板</h2>
+          <p class="page-desc">知识库访问热度、问答响应、问题分布概览。</p>
+        </div>
+        <div id="dashCards" class="metrics"></div>
+        <div class="card"><h3 class="card-title">常见问题 TOP</h3><div id="dashQ"></div></div>
+        <div class="card"><h3 class="card-title">知识单元热度 TOP</h3><div id="dashU"></div></div>
+        <div class="card"><h3 class="card-title">响应时间趋势（ms）</h3><div id="dashT"></div></div>
+      </section>
+
+      <!-- FAQ 审核 -->
+      <section id="faq" class="tab">
+        <div class="page-head">
+          <h2 class="page-title">FAQ 审核</h2>
+          <p class="page-desc">从高频问句中沉淀 FAQ，编辑答案后通过或拒绝。</p>
+        </div>
+        <div id="faqData"></div>
+      </section>
+
+      <!-- 知识缺口 -->
+      <section id="gaps" class="tab">
+        <div class="page-head">
+          <h2 class="page-title">知识缺口</h2>
+          <p class="page-desc">系统未能给出满意回答的高频问题，建议补全知识库。</p>
+        </div>
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>问题</th><th>提问频次</th><th>最近提问</th><th>状态</th></tr></thead>
+              <tbody id="gapsBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 审计日志 -->
+      <section id="audit" class="tab">
+        <div class="page-head">
+          <h2 class="page-title">审计日志</h2>
+          <p class="page-desc">关键操作的可追溯记录。</p>
+        </div>
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>ID</th><th>用户</th><th>动作</th><th>资源</th><th>时间</th></tr></thead>
+              <tbody id="auditBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 组织架构与权限管理 -->
+      <section id="org" class="tab">
+        <div class="page-head">
+          <h2 class="page-title">组织架构与权限管理</h2>
+          <p class="page-desc">用户、角色、部门的统一管理；支持角色权限与数据权限的细粒度配置。</p>
+        </div>
+        <div class="card">
+          <div class="app-tabs" style="margin:-20px -20px 16px;padding:0 20px;background:var(--bg-hover);border-bottom:1px solid var(--border-light);">
+            <div class="tab-item active" data-org="users" onclick="orgTab('users')"><span class="dot"></span>用户管理</div>
+            <div class="tab-item"        data-org="roles" onclick="orgTab('roles')"><span class="dot"></span>角色管理</div>
+            <div class="tab-item"        data-org="depts" onclick="orgTab('depts')"><span class="dot"></span>部门管理</div>
+          </div>
+
+          <div id="orgUsers">
+            <div style="margin-bottom:12px;"><button class="btn btn-primary" onclick="showUserForm()">+ 新增用户</button></div>
+            <div id="userForm" class="card" style="display:none;background:var(--bg-hover);">
+              <div id="userFormTitle" style="font-size:14px;font-weight:500;margin-bottom:8px;"></div>
+              <input id="u_username" type="text" placeholder="用户名" />
+              <input id="u_password" type="password" placeholder="密码（编辑时留空=不改）" />
+              <input id="u_display" type="text" placeholder="显示名" />
+              <select id="u_dept"><option value="">选择部门</option></select>
+              <select id="u_role"><option value="">选择角色</option></select>
+              <select id="u_status">
+                <option value="active">启用</option>
+                <option value="disabled">停用</option>
+              </select>
+              <button class="btn btn-primary" onclick="saveUser()">保存</button>
+              <button class="btn" onclick="cancelUserForm()">取消</button>
+              <span id="userFormMsg" class="muted"></span>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr><th>ID</th><th>用户名</th><th>显示名</th><th>部门</th><th>角色</th><th>状态</th><th>操作</th></tr>
+                </thead>
+                <tbody id="userBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div id="orgRoles" style="display:none">
+            <div style="margin-bottom:12px;"><button class="btn btn-primary" onclick="showRoleForm()">+ 新增角色</button></div>
+            <div id="roleForm" class="card" style="display:none;background:var(--bg-hover);">
+              <div id="roleFormTitle" style="font-size:14px;font-weight:500;margin-bottom:8px;"></div>
+              <input id="r_name" type="text" placeholder="角色名称" />
+              <input id="r_code" type="text" placeholder="角色编码（如 editor）" />
+              <input id="r_desc" type="text" placeholder="描述" />
+              <button class="btn btn-primary" onclick="saveRole()">保存</button>
+              <button class="btn" onclick="cancelRoleForm()">取消</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr><th>ID</th><th>名称</th><th>编码</th><th>描述</th><th>权限</th><th>操作</th></tr>
+                </thead>
+                <tbody id="roleBody"></tbody>
+              </table>
+            </div>
+            <div id="permPanel" class="card" style="display:none;background:var(--bg-hover);">
+              <div id="permTitle" style="font-size:14px;font-weight:500;margin-bottom:8px;"></div>
+              <div id="permChecks"></div>
+              <button class="btn btn-primary" onclick="savePerm()">保存权限</button>
+              <button class="btn" onclick="document.getElementById('permPanel').style.display='none'">关闭</button>
+            </div>
+          </div>
+
+          <div id="orgDepts" style="display:none">
+            <div style="margin-bottom:12px;"><button class="btn btn-primary" onclick="showDeptForm()">+ 新增部门</button></div>
+            <div id="deptForm" class="card" style="display:none;background:var(--bg-hover);">
+              <div id="deptFormTitle" style="font-size:14px;font-weight:500;margin-bottom:8px;"></div>
+              <input id="d_name" type="text" placeholder="部门名称" />
+              <select id="d_parent"><option value="">无上级（顶级）</option></select>
+              <button class="btn btn-primary" onclick="saveDept()">保存</button>
+              <button class="btn" onclick="cancelDeptForm()">取消</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr><th>ID</th><th>名称</th><th>上级</th><th>操作</th></tr>
+                </thead>
+                <tbody id="deptBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
   </div>
 
-  <script>
-    let token = localStorage.getItem("kb_token") || "";
-    let lastQuestion = "";
-    let lastAnswer = "";
-    const CONF_THRESHOLD = 0.6;
-
-    function esc(s) {
-      return String(s == null ? "" : s).replace(/[&<>"']/g, c =>
-        ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-    }
-
-    function show(name) {
-      document.querySelectorAll(".tab").forEach(s => s.style.display = "none");
-      document.getElementById(name).style.display = "block";
-    }
-
-    async function api(path, opts = {}) {
-      opts.headers = Object.assign({ "Content-Type": "application/json" }, opts.headers || {});
-      if (token) opts.headers["Authorization"] = "Bearer " + token;
-      const r = await fetch(path, opts);
-      if (r.status === 401) { logout(); throw new Error("未登录"); }
-      if (r.status === 403) {
-        const body = await r.json();
-        if (body.detail && body.detail.code === "must_change_password") { showPwdBox(); throw new Error("must_change_password"); }
-        alert("无权限操作"); throw new Error("403");
-      }
-      return r.json();
-    }
-
-    function enterApp(me) {
-      window.me = me;
-      document.getElementById("loginBox").style.display = "none";
-      document.getElementById("pwdBox").style.display = "none";
-      document.getElementById("app").style.display = "block";
-      document.getElementById("who").textContent = (me.display_name || "") + "（" + me.role_code + "）";
-      document.getElementById("navOrg").style.display = (me.roles || []).includes("admin") ? "" : "none";
-      loadUnits();
-    }
-
-    function showPwdBox() {
-      document.getElementById("loginBox").style.display = "none";
-      document.getElementById("app").style.display = "none";
-      document.getElementById("pwdBox").style.display = "block";
-      document.getElementById("pwdErr").textContent = "";
-    }
-
-    async function login() {
-      const r = await fetch("/api/auth/login", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: u.value, password: p.value })
-      });
-      if (!r.ok) { err.textContent = "登录失败"; return; }
-      const d = await r.json();
-      token = d.token;
-      localStorage.setItem("kb_token", token);
-      if (d.must_change_password) { showPwdBox(); return; }  // 首次登录强制改密
-      enterApp(d.user_info);
-    }
-
-    async function logout() {
-      try {
-        if (token) await fetch("/api/auth/logout", { method: "POST", headers: { "Authorization": "Bearer " + token } });
-      } catch (e) {}
-      token = ""; localStorage.removeItem("kb_token"); location.reload();
-    }
-
-    async function checkSession() {
-      if (!token) return;  // 默认显示登录框
-      try {
-        const me = await api("/api/auth/me");
-        if (me.must_change_password) { showPwdBox(); return; }
-        enterApp(me);
-      } catch (e) { /* api() 已处理 401->logout / 403->showPwdBox */ }
-    }
-
-    async function changePassword() {
-      const box = document.getElementById("pwdErr");
-      box.textContent = "";
-      const cur = document.getElementById("cur_pwd").value;
-      const n1 = document.getElementById("new_pwd").value;
-      const n2 = document.getElementById("new_pwd2").value;
-      if (n1 !== n2) { box.textContent = "两次输入不一致"; return; }
-      const r = await fetch("/api/auth/change-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
-        body: JSON.stringify({ current_password: cur, new_password: n1 })
-      });
-      if (!r.ok) {
-        const b = await r.json();
-        box.textContent = typeof b.detail === "string" ? b.detail : "修改失败";
-        return;
-      }
-      const me = await api("/api/auth/me");
-      enterApp(me);
-    }
-
-    checkSession();
-
-    const canPerm = () => ((window.me && (window.me.roles || []).includes("admin")) ||
-      (window.me && (window.me.permissions || []).includes("knowledge:permission")));
-
-    function permSummary(u) {
-      if (u.perms === undefined) return "—";
-      if (!u.perms || !u.perms.length) return "仅创建者";
-      const parts = [];
-      if (u.perms.some(p => p.target_type === "global")) parts.push("全局");
-      const depts = u.perms.filter(p => p.target_type === "department");
-      if (depts.length) parts.push("部门×" + depts.length);
-      const roles = u.perms.filter(p => p.target_type === "role");
-      if (roles.length) parts.push("角色×" + roles.length);
-      const users = u.perms.filter(p => p.target_type === "user");
-      if (users.length) parts.push("个人×" + users.length);
-      return parts.join(" / ");
-    }
-
-    async function loadUnits() {
-      const d = await api("/api/knowledge/units");
-      const tbody = document.getElementById("unitBody");
-      tbody.innerHTML = "";
-      const showPermBtn = canPerm();
-      d.forEach(u => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = "<td>" + u.id + "</td><td>" + esc(u.title) + "</td><td>" + esc(u.category || "") +
-          "</td><td>" + esc(permSummary(u)) + "</td><td>" + esc(u.status) + "</td><td>v" + esc(u.version_no) + "</td>" +
-          "<td>" + (showPermBtn ? "<button onclick=\"openUnitPerm(" + u.id + ")\">权限</button>" : "") +
-          "<button onclick=\"publish(" + u.id + ")\">发布</button>" +
-          "<button onclick=\"archive(" + u.id + ")\">归档</button>" +
-          "<button onclick=\"del(" + u.id + ")\">删除</button>" +
-          "<button onclick=\"openVersions(" + u.id + ")\">版本</button></td>";
-        tbody.appendChild(tr);
-      });
-    }
-
-    let unitPermId = null, permOpts = null;
-
-    async function loadPermOptions() {
-      if (permOpts) return permOpts;
-      permOpts = await api("/api/org/permission-options");
-      return permOpts;
-    }
-
-    async function openUnitPerm(id) {
-      unitPermId = id;
-      document.getElementById("unitPermMsg").textContent = "";
-      try {
-        const [u, opts] = await Promise.all([
-          api("/api/knowledge/units/" + id), loadPermOptions()
-        ]);
-        const perms = u.perms || [];
-        const has = (t, v) => perms.some(p => p.target_type === t && String(p.target_id) === String(v));
-        const hasAny = (t) => perms.some(p => p.target_type === t);
-        document.getElementById("unitPermTitle").textContent = "配置数据权限：单元 #" + id + " " + (u.title || "");
-        document.getElementById("permGlobal").checked = hasAny("global");
-
-        const deptBox = document.getElementById("permDept"); deptBox.innerHTML = "";
-        (opts.departments || []).forEach(d => {
-          const lab = document.createElement("label");
-          const cb = document.createElement("input");
-          cb.type = "checkbox"; cb.value = d.id; cb.checked = has("department", d.id);
-          lab.appendChild(cb); lab.appendChild(document.createTextNode(" " + d.name));
-          deptBox.appendChild(lab);
-        });
-
-        const roleBox = document.getElementById("permRole"); roleBox.innerHTML = "";
-        (opts.roles || []).forEach(r => {
-          const lab = document.createElement("label");
-          const cb = document.createElement("input");
-          cb.type = "checkbox"; cb.value = r.role_code; cb.checked = has("role", r.role_code);
-          lab.appendChild(cb); lab.appendChild(document.createTextNode(" " + r.role_name + "（" + r.role_code + "）"));
-          roleBox.appendChild(lab);
-        });
-
-        const userBox = document.getElementById("permUser"); userBox.innerHTML = "";
-        (opts.users || []).forEach(x => {
-          const lab = document.createElement("label");
-          const cb = document.createElement("input");
-          cb.type = "checkbox"; cb.value = x.id; cb.checked = has("user", x.id);
-          lab.appendChild(cb); lab.appendChild(document.createTextNode(" " + (x.display_name || x.username) + "（#" + x.id + "）"));
-          userBox.appendChild(lab);
-        });
-
-        document.getElementById("unitPermPanel").style.display = "block";
-      } catch (e) {
-        document.getElementById("unitPermMsg").textContent = "加载失败：" + e.message;
-      }
-    }
-
-    async function saveUnitPerm() {
-      const perms = [];
-      if (document.getElementById("permGlobal").checked) perms.push({ target_type: "global", target_id: null });
-      document.querySelectorAll("#permDept input:checked").forEach(cb => perms.push({ target_type: "department", target_id: Number(cb.value) }));
-      document.querySelectorAll("#permRole input:checked").forEach(cb => perms.push({ target_type: "role", target_id: cb.value }));
-      document.querySelectorAll("#permUser input:checked").forEach(cb => perms.push({ target_type: "user", target_id: Number(cb.value) }));
-      try {
-        await api("/api/knowledge/units/" + unitPermId + "/permissions", { method: "POST", body: JSON.stringify({ permissions: perms }) });
-        document.getElementById("unitPermPanel").style.display = "none";
-        loadUnits();
-      } catch (e) {
-        document.getElementById("unitPermMsg").textContent = "保存失败：" + e.message;
-      }
-    }
-
-    async function importText() {
-      const content = document.getElementById("txt").value;
-      if (!content) return;
-      await api("/api/knowledge/import-text", {
-        method: "POST",
-        body: JSON.stringify({ title: "手动导入", content, data_domain: "默认", security_level: "internal" })
-      });
-      document.getElementById("txt").value = "";
-      loadUnits();
-    }
-
-    async function uploadFiles() {
-      const files = document.getElementById("files").files;
-      if (!files.length) return;
-      const fd = new FormData();
-      for (const f of files) fd.append("files", f);
-      fd.append("security_level", "internal");
-      fd.append("data_domain", "绿建/双碳");
-      const r = await fetch("/api/knowledge/import", {
-        method: "POST", headers: { "Authorization": "Bearer " + token }, body: fd
-      });
-      const d = await r.json();
-      if (!d.task_ids || !d.task_ids.length) {
-        document.getElementById("uploadMsg").textContent = "未提交任何任务";
-        return;
-      }
-      document.getElementById("uploadMsg").textContent = "已提交 " + d.task_ids.length + " 个导入任务，导入中……";
-      let done = 0;
-      while (done < d.task_ids.length) {
-        done = 0;
-        const statuses = [];
-        for (const tid of d.task_ids) {
-          const st = await api("/api/knowledge/import/status/" + tid);
-          statuses.push(st.status);
-          if (st.status === "completed" || st.status === "failed") done++;
-        }
-        document.getElementById("uploadMsg").textContent =
-          "导入进度：" + done + "/" + d.task_ids.length + "（" + statuses.join("、") + "）";
-        if (done >= d.task_ids.length) break;
-        await new Promise(res => setTimeout(res, 800));
-      }
-      loadUnits();
-    }
-
-    async function publish(id) { await api("/api/knowledge/units/" + id + "/publish", { method: "POST" }); loadUnits(); }
-    async function archive(id) { await api("/api/knowledge/units/" + id + "/archive", { method: "POST" }); loadUnits(); }
-    async function del(id) { await api("/api/knowledge/units", { method: "DELETE", body: JSON.stringify({ unit_ids: [id] }) }); loadUnits(); }
-
-    function openVersions(id) {
-      document.getElementById("verUnit").value = id;
-      show("versions");
-      loadVersions();
-    }
-
-    async function loadVersions() {
-      const id = document.getElementById("verUnit").value;
-      if (!id) return;
-      const d = await api("/api/knowledge/units/" + id + "/versions");
-      const tbody = document.getElementById("verBody");
-      tbody.innerHTML = "";
-      d.forEach(v => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = "<td>" + v.id + "</td><td>v" + v.version_no + "</td><td>" + esc(v.status) + "</td><td>" +
-          esc(v.title) + "</td><td>" + esc(v.updated_at || "") + "</td><td>" +
-          "<button onclick=\"rollback(" + id + "," + v.id + ")\">回滚到此版本</button></td>";
-        tbody.appendChild(tr);
-      });
-      document.getElementById("verMsg").textContent = "";
-    }
-
-    async function rollback(currentId, targetId) {
-      await api("/api/knowledge/units/" + currentId + "/rollback", {
-        method: "POST", body: JSON.stringify({ target_version_id: targetId })
-      });
-      document.getElementById("verMsg").textContent = "已生成回滚草稿版本";
-      loadVersions();
-    }
-
-    async function ask() {
-      const question = document.getElementById("q").value;
-      lastQuestion = question;
-      const box = document.getElementById("answer");
-      box.textContent = "思考中……";
-      const resp = await fetch("/api/ai/chat/stream", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
-        body: JSON.stringify({ question, session_id: "s1" })
-      });
-      const reader = resp.body.getReader();
-      const decoder = new TextDecoder();
-      let text = "", buf = "", blocked = [], evidence = [], model = "";
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buf += decoder.decode(value, { stream: true });
-        const parts = buf.split("\n\n");
-        buf = parts.pop() || "";
-        for (const part of parts) {
-          if (!part.startsWith("data: ")) continue;
-          const evt = JSON.parse(part.slice(6));
-          if (evt.event === "message_delta") { text += evt.delta; box.textContent = text; }
-          if (evt.event === "blocked") blocked = evt.blocked || [];
-          if (evt.event === "evidence") evidence = evt.evidence || [];
-          if (evt.event === "model") model = evt.model || "";
-        }
-      }
-      box.textContent = text || "（无回答）";
-      lastAnswer = text;
-      if (blocked.length) {
-        const note = document.createElement("div");
-        note.className = "low-conf";
-        note.textContent = "[权限提示] " + blocked.join("；");
-        box.appendChild(note);
-      }
-      if (evidence.length) renderEvidence(evidence, box);
-      if (model) {
-        const m = document.createElement("div");
-        m.className = "muted";
-        m.textContent = "[模型] " + model;
-        box.appendChild(m);
-      }
-      const fb = document.createElement("div");
-      fb.id = "feedbackRow";
-      fb.innerHTML = '<button onclick="feedback(\'up\')">有用</button> ' +
-                     '<button onclick="feedback(\'down\')">没用</button>';
-      box.appendChild(fb);
-    }
-
-    function renderEvidence(evidence, box) {
-      const scores = evidence.map(e => Number(e.score) || 0);
-      const maxS = Math.max(...scores);
-      const avgS = scores.reduce((a, b) => a + b, 0) / scores.length;
-      const conf = maxS > 0 ? avgS / maxS : null;
-      const panel = document.createElement("div");
-      panel.className = "evidence-panel";
-      const title = document.createElement("div");
-      title.className = "evidence-title";
-      title.textContent = "引用证据";
-      panel.appendChild(title);
-      if (conf !== null && conf < CONF_THRESHOLD) {
-        const warn = document.createElement("div");
-        warn.className = "low-conf";
-        warn.textContent = "⚠ 低置信度：检索结果相关度较低，回答仅供参考";
-        panel.appendChild(warn);
-      }
-      evidence.forEach(e => {
-        const row = document.createElement("div");
-        row.className = "evidence-item";
-        const n = document.createElement("span");
-        n.className = "evidence-n";
-        n.textContent = "[" + e.id + "] ";
-        const s = document.createElement("span");
-        s.textContent = e.source || "";
-        const sc = document.createElement("span");
-        sc.className = "evidence-score";
-        const pct = maxS > 0 ? Math.round(((Number(e.score) || 0) / maxS) * 100) : null;
-        sc.textContent = pct !== null ? "　相关度 " + pct + "%" : "";
-        row.appendChild(n); row.appendChild(s); row.appendChild(sc);
-        panel.appendChild(row);
-      });
-      box.appendChild(panel);
-    }
-
-    async function feedback(rating) {
-      await api("/api/settlement/feedback", {
-        method: "POST",
-        body: JSON.stringify({
-          session_id: "s1",
-          question: lastQuestion,
-          answer: lastAnswer,
-          rating: rating,
-          feedback_type: rating === "down" ? "wrong_answer" : "none",
-          comment: rating === "down" ? "用户反馈回答不准确" : ""
-        })
-      });
-      alert(rating === "up" ? "已反馈：有用" : "已反馈：没用，将进入知识缺口分析");
-    }
-
-    async function loadDash() {
-      const d = await api("/api/dashboard/metrics");
-      const cards = document.getElementById("dashCards");
-      cards.innerHTML =
-        '<div class="metric">访问次数<b>' + esc(d.total_accesses) + '</b></div>' +
-        '<div class="metric">独立用户<b>' + esc(d.unique_users) + '</b></div>' +
-        '<div class="metric">知识单元<b>' + esc(d.knowledge_unit_count) + '</b></div>' +
-        '<div class="metric">Token 消耗<b>' + esc(d.token_consumption) + '</b></div>';
-      renderBars("dashQ", d.top_questions, q => q.question + "（" + q.hit_count + "）", q => q.hit_count);
-      renderBars("dashU", d.hot_units, u => "单元#" + u.unit_id, u => u.access_count);
-      const t = document.getElementById("dashT");
-      t.innerHTML = d.response_time_trend.map(r => esc(r.date) + "：" + esc(r.avg_ms) + "ms").join("<br>");
-    }
-
-    function renderBars(id, items, label, value) {
-      const box = document.getElementById(id);
-      box.innerHTML = "";
-      const max = Math.max(1, ...items.map(value));
-      items.forEach(it => {
-        const row = document.createElement("div");
-        row.className = "bar-row";
-        const span = document.createElement("span"); span.textContent = label(it);
-        const bar = document.createElement("div"); bar.className = "bar";
-        bar.style.width = Math.round(value(it) / max * 100) + "%";
-        row.appendChild(span); row.appendChild(bar); box.appendChild(row);
-      });
-    }
-
-    async function loadFaq() {
-      const d = await api("/api/settlement/faqs/recommendations");
-      const box = document.getElementById("faqData");
-      box.innerHTML = "";
-      if (!d.length) { box.innerHTML = "<div class='card'>暂无待审核 FAQ</div>"; return; }
-      d.forEach(f => {
-        const card = document.createElement("div");
-        card.className = "card";
-        card.innerHTML = "<b>#" + f.id + " " + esc(f.question) + "</b>（频次 " + f.hit_count + "）<br>" +
-          "<textarea id='ans" + f.id + "' placeholder='编辑答案'>" + esc(f.answer || "") + "</textarea><br>" +
-          "<button class='btn-ok' onclick=\"review(" + f.id + ",'approve')\">通过并发布</button> " +
-          "<button class='btn-no' onclick=\"review(" + f.id + ",'reject')\">拒绝</button>";
-        box.appendChild(card);
-      });
-    }
-
-    async function review(id, action) {
-      const answer = document.getElementById("ans" + id).value;
-      await api("/api/settlement/faqs/" + id + "/review", {
-        method: "POST", body: JSON.stringify({ action, edited_answer: answer })
-      });
-      loadFaq();
-    }
-
-    async function loadGaps() {
-      const d = await api("/api/settlement/knowledge-gaps");
-      const tbody = document.getElementById("gapsBody");
-      tbody.innerHTML = "";
-      d.forEach(g => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = "<td>" + esc(g.question_pattern) + "</td><td>" + g.ask_count + "</td><td>" +
-          esc(g.last_asked_at || "") + "</td><td>" + esc(g.status) + "</td>";
-        tbody.appendChild(tr);
-      });
-    }
-
-    async function loadAudit() {
-      const d = await api("/api/audit/logs");
-      const tbody = document.getElementById("auditBody");
-      tbody.innerHTML = "";
-      d.forEach(a => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = "<td>" + a.id + "</td><td>用户#" + a.user_id + "</td><td>" + esc(a.action) + "</td><td>" +
-          esc(a.resource_type) + ":" + esc(a.resource_id) + "</td><td>" + esc(a.created_at || "") + "</td>";
-        tbody.appendChild(tr);
-      });
-    }
-
-    // ===== 组织架构与权限管理 =====
-    let orgDepts = [], orgRoles = [], orgPerms = [], orgUsers = [], editingUserId = null;
-
-    function orgTab(name) {
-      document.getElementById("orgUsers").style.display = name === "users" ? "block" : "none";
-      document.getElementById("orgRoles").style.display = name === "roles" ? "block" : "none";
-      document.getElementById("orgDepts").style.display = name === "depts" ? "block" : "none";
-    }
-
-    async function loadOrg() {
-      const [depts, roles, users, perms] = await Promise.all([
-        api("/api/org/departments"), api("/api/org/roles"),
-        api("/api/org/users"), api("/api/org/permissions")
-      ]);
-      orgDepts = depts; orgRoles = roles; orgUsers = users; orgPerms = perms;
-      renderUsers(); renderRoles(); renderDepts();
-    }
-
-    function deptName(id) {
-      const d = orgDepts.find(x => x.id === id);
-      return d ? d.name : "—";
-    }
-    function fillDeptSelect(sel, withEmpty) {
-      sel.innerHTML = (withEmpty ? '<option value="">无上级（顶级）</option>' : "");
-      orgDepts.forEach(d => {
-        const o = document.createElement("option"); o.value = d.id; o.textContent = d.name; sel.appendChild(o);
-      });
-    }
-    function fillRoleSelect(sel) {
-      sel.innerHTML = '<option value="">选择角色</option>';
-      orgRoles.forEach(r => {
-        const o = document.createElement("option"); o.value = r.role_code; o.textContent = r.role_name; sel.appendChild(o);
-      });
-    }
-
-    function renderUsers() {
-      const tb = document.getElementById("userBody"); tb.innerHTML = "";
-      orgUsers.forEach(u => {
-        const tr = document.createElement("tr");
-        const isMe = u.id === (window.me && window.me.id);
-        tr.innerHTML = "<td>" + u.id + "</td><td>" + esc(u.username) + "</td><td>" + esc(u.display_name || "") + "</td><td>" +
-          esc(deptName(u.department_id)) + "</td><td>" + esc((u.roles || []).join(",")) + "</td><td>" + esc(u.status) + "</td><td>" +
-          "<button onclick='editUser(" + u.id + ")'>编辑</button> " +
-          "<button onclick='resetPwd(" + u.id + ")'>重置密码</button> " +
-          "<button onclick='toggleUser(" + u.id + ")'>" + (u.status === "active" ? "停用" : "启用") + "</button></td>";
-        tb.appendChild(tr);
-      });
-    }
-
-    function showUserForm() {
-      editingUserId = null;
-      document.getElementById("userFormTitle").textContent = "新增用户";
-      document.getElementById("u_username").value = "";
-      document.getElementById("u_username").disabled = false;
-      document.getElementById("u_password").value = "";
-      document.getElementById("u_display").value = "";
-      document.getElementById("u_status").value = "active";
-      fillDeptSelect(document.getElementById("u_dept"), true);
-      fillRoleSelect(document.getElementById("u_role"));
-      document.getElementById("userForm").style.display = "block";
-      document.getElementById("userFormMsg").textContent = "";
-    }
-    function cancelUserForm() { document.getElementById("userForm").style.display = "none"; }
-
-    async function saveUser() {
-      const payload = {
-        display_name: document.getElementById("u_display").value,
-        department_id: document.getElementById("u_dept").value ? Number(document.getElementById("u_dept").value) : null,
-        role_codes: document.getElementById("u_role").value ? [document.getElementById("u_role").value] : [],
-        status: document.getElementById("u_status").value
-      };
-      const pw = document.getElementById("u_password").value;
-      if (pw) payload.password = pw;
-      try {
-        if (editingUserId) {
-          await api("/api/org/users/" + editingUserId, { method: "PUT", body: JSON.stringify(payload) });
-        } else {
-          const uname = document.getElementById("u_username").value;
-          if (!uname) { document.getElementById("userFormMsg").textContent = "请填写用户名"; return; }
-          if (!pw) { document.getElementById("userFormMsg").textContent = "新增用户必须设密码"; return; }
-          await api("/api/org/users", { method: "POST", body: JSON.stringify(Object.assign({ username: uname }, payload)) });
-        }
-        document.getElementById("userForm").style.display = "none";
-        await loadOrg();
-      } catch (e) { document.getElementById("userFormMsg").textContent = "保存失败：" + e.message; }
-    }
-
-    async function editUser(id) {
-      const u = orgUsers.find(x => x.id === id);
-      if (!u) return;
-      editingUserId = id;
-      document.getElementById("userFormTitle").textContent = "编辑用户 #" + id;
-      document.getElementById("u_username").value = u.username;
-      document.getElementById("u_username").disabled = true;
-      document.getElementById("u_password").value = "";
-      document.getElementById("u_display").value = u.display_name || "";
-      document.getElementById("u_status").value = u.status || "active";
-      fillDeptSelect(document.getElementById("u_dept"), true);
-      document.getElementById("u_dept").value = u.department_id || "";
-      fillRoleSelect(document.getElementById("u_role"));
-      document.getElementById("u_role").value = (u.roles && u.roles[0]) || "";
-      document.getElementById("userForm").style.display = "block";
-      document.getElementById("userFormMsg").textContent = "";
-    }
-
-    async function resetPwd(id) {
-      const pw = prompt("输入新密码（至少 4 位）：");
-      if (!pw) return;
-      await api("/api/org/users/" + id, { method: "PUT", body: JSON.stringify({ password: pw }) });
-      alert("密码已重置");
-    }
-    async function toggleUser(id) {
-      const u = orgUsers.find(x => x.id === id);
-      const next = u.status === "active" ? "disabled" : "active";
-      await api("/api/org/users/" + id, { method: "PUT", body: JSON.stringify({ status: next }) });
-      await loadOrg();
-    }
-
-    function renderRoles() {
-      const tb = document.getElementById("roleBody"); tb.innerHTML = "";
-      orgRoles.forEach(r => {
-        const tr = document.createElement("tr");
-        const perms = (r.permissions || []).join(", ");
-        tr.innerHTML = "<td>" + r.id + "</td><td>" + esc(r.role_name) + "</td><td>" + esc(r.role_code) + "</td><td>" +
-          esc(r.description || "") + "</td><td>" + esc(perms) + "</td><td>" +
-          "<button onclick='openPerm(" + r.id + ")'>权限</button> " +
-          "<button onclick='editRole(" + r.id + ")'>编辑</button> " +
-          "<button onclick='delRole(" + r.id + ")'>删除</button></td>";
-        tb.appendChild(tr);
-      });
-    }
-    function showRoleForm() {
-      document.getElementById("roleFormTitle").textContent = "新增角色";
-      document.getElementById("r_name").value = "";
-      document.getElementById("r_code").value = "";
-      document.getElementById("r_desc").value = "";
-      document.getElementById("roleForm").style.display = "block";
-    }
-    function cancelRoleForm() { document.getElementById("roleForm").style.display = "none"; }
-
-    let editingRoleId = null, permRoleId = null;
-    async function saveRole() {
-      const payload = { role_name: document.getElementById("r_name").value, role_code: document.getElementById("r_code").value, description: document.getElementById("r_desc").value };
-      if (!payload.role_name || !payload.role_code) { alert("请填写名称和编码"); return; }
-      if (editingRoleId) {
-        await api("/api/org/roles/" + editingRoleId, { method: "PUT", body: JSON.stringify(payload) });
-      } else {
-        await api("/api/org/roles", { method: "POST", body: JSON.stringify(payload) });
-      }
-      editingRoleId = null;
-      document.getElementById("roleForm").style.display = "none";
-      await loadOrg();
-    }
-    async function editRole(id) {
-      const r = orgRoles.find(x => x.id === id); if (!r) return;
-      editingRoleId = id;
-      document.getElementById("roleFormTitle").textContent = "编辑角色 #" + id;
-      document.getElementById("r_name").value = r.role_name;
-      document.getElementById("r_code").value = r.role_code;
-      document.getElementById("r_desc").value = r.description || "";
-      document.getElementById("roleForm").style.display = "block";
-    }
-    async function delRole(id) {
-      if (!confirm("确认删除该角色？")) return;
-      await api("/api/org/roles/" + id, { method: "DELETE" });
-      await loadOrg();
-    }
-
-    function openPerm(roleId) {
-      permRoleId = roleId;
-      const role = orgRoles.find(x => x.id === roleId);
-      const owned = new Set(role ? (role.permissions || []) : []);
-      const box = document.getElementById("permChecks"); box.innerHTML = "";
-      orgPerms.forEach(p => {
-        const lab = document.createElement("label");
-        lab.style.marginRight = "12px";
-        const cb = document.createElement("input");
-        cb.type = "checkbox"; cb.value = p.code; cb.checked = owned.has(p.code);
-        lab.appendChild(cb); lab.appendChild(document.createTextNode(" " + p.label + "（" + p.code + "）"));
-        box.appendChild(lab); box.appendChild(document.createElement("br"));
-      });
-      document.getElementById("permTitle").textContent = "配置权限：" + (role ? role.role_name : roleId);
-      document.getElementById("permPanel").style.display = "block";
-    }
-    async function savePerm() {
-      const codes = Array.from(document.querySelectorAll("#permChecks input:checked")).map(cb => cb.value);
-      await api("/api/org/roles/" + permRoleId + "/permissions", { method: "POST", body: JSON.stringify({ permission_codes: codes }) });
-      document.getElementById("permPanel").style.display = "none";
-      await loadOrg();
-    }
-
-    function renderDepts() {
-      const tb = document.getElementById("deptBody"); tb.innerHTML = "";
-      orgDepts.forEach(d => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = "<td>" + d.id + "</td><td>" + esc(d.name) + "</td><td>" + esc(deptName(d.parent_id)) + "</td><td>" +
-          "<button onclick='editDept(" + d.id + ")'>编辑</button> " +
-          "<button onclick='delDept(" + d.id + ")'>删除</button></td>";
-        tb.appendChild(tr);
-      });
-    }
-    function showDeptForm() {
-      document.getElementById("deptFormTitle").textContent = "新增部门";
-      document.getElementById("d_name").value = "";
-      fillDeptSelect(document.getElementById("d_parent"), true);
-      document.getElementById("deptForm").style.display = "block";
-    }
-    let editingDeptId = null;
-    async function saveDept() {
-      const payload = { name: document.getElementById("d_name").value, parent_id: document.getElementById("d_parent").value ? Number(document.getElementById("d_parent").value) : null };
-      if (!payload.name) { alert("请填写部门名称"); return; }
-      if (editingDeptId) {
-        await api("/api/org/departments/" + editingDeptId, { method: "PUT", body: JSON.stringify(payload) });
-      } else {
-        await api("/api/org/departments", { method: "POST", body: JSON.stringify(payload) });
-      }
-      editingDeptId = null;
-      document.getElementById("deptForm").style.display = "none";
-      await loadOrg();
-    }
-    async function editDept(id) {
-      const d = orgDepts.find(x => x.id === id); if (!d) return;
-      editingDeptId = id;
-      document.getElementById("deptFormTitle").textContent = "编辑部门 #" + id;
-      document.getElementById("d_name").value = d.name;
-      fillDeptSelect(document.getElementById("d_parent"), true);
-      document.getElementById("d_parent").value = d.parent_id || "";
-      document.getElementById("deptForm").style.display = "block";
-    }
-    async function delDept(id) {
-      if (!confirm("确认删除该部门？其下用户将解除部门归属。")) return;
-      await api("/api/org/departments/" + id, { method: "DELETE" });
-      await loadOrg();
-    }
-  </script>
+  <script src="/static/js/app.js"></script>
 </body>
 </html>
