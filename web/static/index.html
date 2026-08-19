@@ -12,7 +12,9 @@
   <div id="loginBox" class="auth-wrap">
     <div class="auth-card">
       <div class="brand" style="justify-content:center;margin-bottom:8px;">
-        <span class="brand-mark">R</span>
+        <span class="brand-mark">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>
+        </span>
         <span class="brand-name"><span class="sub">RAGreen</span>知识库</span>
       </div>
       <h2>欢迎登录</h2>
@@ -49,7 +51,9 @@
     <!-- 顶部 Header：薄白条 + 绿色 Logo -->
     <header class="app-header">
       <div class="brand">
-        <span class="brand-mark">R</span>
+        <span class="brand-mark">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>
+        </span>
         <span class="brand-name"><span class="sub">RAGreen</span>知识库</span>
       </div>
       <div class="header-right">
@@ -60,21 +64,21 @@
     </header>
 
     <!-- 文字型 Tab 导航 -->
-    <nav class="app-tabs">
-      <div class="tab-item active" data-tab="units"     onclick="show('units')"><span class="dot"></span>知识库</div>
-      <div class="tab-item"        data-tab="versions"  onclick="show('versions')"><span class="dot"></span>版本管理</div>
-      <div class="tab-item"        data-tab="qa"        onclick="show('qa')"><span class="dot"></span>AI 问答</div>
-      <div class="tab-item"        data-tab="dash"      onclick="show('dash'); loadDash()"><span class="dot"></span>看板</div>
-      <div class="tab-item"        data-tab="faq"       onclick="show('faq'); loadFaq()"><span class="dot"></span>FAQ 审核</div>
-      <div class="tab-item"        data-tab="gaps"      onclick="show('gaps'); loadGaps()"><span class="dot"></span>知识缺口</div>
-      <div class="tab-item"        data-tab="audit"     onclick="show('audit'); loadAudit()"><span class="dot"></span>审计日志</div>
-      <div class="tab-item"        data-tab="org"       id="navOrg" onclick="show('org'); loadOrg()"><span class="dot"></span>组织架构</div>
+    <nav class="app-tabs" role="tablist" aria-label="主导航">
+      <button type="button" class="tab-item active" role="tab" aria-selected="true"  id="tab-units"    data-tab="units"    onclick="show('units')"><span class="dot"></span>知识库</button>
+      <button type="button" class="tab-item"        role="tab" aria-selected="false" id="tab-versions" data-tab="versions" onclick="show('versions')"><span class="dot"></span>版本管理</button>
+      <button type="button" class="tab-item"        role="tab" aria-selected="false" id="tab-qa"       data-tab="qa"       onclick="show('qa')"><span class="dot"></span>AI 问答</button>
+      <button type="button" class="tab-item"        role="tab" aria-selected="false" id="tab-dash"     data-tab="dash"     onclick="show('dash'); loadDash()"><span class="dot"></span>看板</button>
+      <button type="button" class="tab-item"        role="tab" aria-selected="false" id="tab-faq"      data-tab="faq"      onclick="show('faq'); loadFaq()"><span class="dot"></span>FAQ 审核</button>
+      <button type="button" class="tab-item"        role="tab" aria-selected="false" id="tab-gaps"     data-tab="gaps"     onclick="show('gaps'); loadGaps()"><span class="dot"></span>知识缺口</button>
+      <button type="button" class="tab-item"        role="tab" aria-selected="false" id="tab-audit"    data-tab="audit"    onclick="show('audit'); loadAudit()"><span class="dot"></span>审计日志</button>
+      <button type="button" class="tab-item"        role="tab" aria-selected="false" id="navOrg"      data-tab="org"      onclick="show('org'); loadOrg()"><span class="dot"></span>组织架构</button>
     </nav>
 
     <main class="app-main">
 
       <!-- 知识单元 -->
-      <section id="units" class="tab active">
+      <section id="units" class="tab active" role="tabpanel" aria-labelledby="tab-units">
         <div class="page-head">
           <h2 class="page-title">知识单元</h2>
           <p class="page-desc">管理知识库内容，支持 Markdown/文本、文件批量上传与四类数据权限配置。</p>
@@ -227,7 +231,7 @@
       </section>
 
       <!-- 版本管理 -->
-      <section id="versions" class="tab">
+      <section id="versions" class="tab" role="tabpanel" aria-labelledby="tab-versions">
         <div class="page-head">
           <h2 class="page-title">版本管理</h2>
           <p class="page-desc">查看与回滚知识单元的历史版本。</p>
@@ -250,7 +254,7 @@
       </section>
 
       <!-- AI 问答 -->
-      <section id="qa" class="tab">
+      <section id="qa" class="tab" role="tabpanel" aria-labelledby="tab-qa">
         <div class="page-head">
           <h2 class="page-title">AI 问答</h2>
           <p class="page-desc">混合检索 + HyDE + RRF 融合 + 可选 rerank，证据链与置信度全透明。</p>
@@ -268,7 +272,7 @@
       </section>
 
       <!-- 看板 -->
-      <section id="dash" class="tab">
+      <section id="dash" class="tab" role="tabpanel" aria-labelledby="tab-dash">
         <div class="page-head">
           <h2 class="page-title">数据看板</h2>
           <p class="page-desc">知识库访问热度、问答响应、问题分布概览。</p>
@@ -280,7 +284,7 @@
       </section>
 
       <!-- FAQ 审核 -->
-      <section id="faq" class="tab">
+      <section id="faq" class="tab" role="tabpanel" aria-labelledby="tab-faq">
         <div class="page-head">
           <h2 class="page-title">FAQ 审核</h2>
           <p class="page-desc">从高频问句中沉淀 FAQ，编辑答案后通过或拒绝。</p>
@@ -289,7 +293,7 @@
       </section>
 
       <!-- 知识缺口 -->
-      <section id="gaps" class="tab">
+      <section id="gaps" class="tab" role="tabpanel" aria-labelledby="tab-gaps">
         <div class="page-head">
           <h2 class="page-title">知识缺口</h2>
           <p class="page-desc">系统未能给出满意回答的高频问题，建议补全知识库。</p>
@@ -305,7 +309,7 @@
       </section>
 
       <!-- 审计日志 -->
-      <section id="audit" class="tab">
+      <section id="audit" class="tab" role="tabpanel" aria-labelledby="tab-audit">
         <div class="page-head">
           <h2 class="page-title">审计日志</h2>
           <p class="page-desc">关键操作的可追溯记录。</p>
@@ -321,16 +325,16 @@
       </section>
 
       <!-- 组织架构与权限管理 -->
-      <section id="org" class="tab">
+      <section id="org" class="tab" role="tabpanel" aria-labelledby="navOrg">
         <div class="page-head">
           <h2 class="page-title">组织架构与权限管理</h2>
           <p class="page-desc">用户、角色、部门的统一管理；支持角色权限与数据权限的细粒度配置。</p>
         </div>
         <div class="card">
-          <div class="app-tabs" style="margin:-20px -20px 16px;padding:0 20px;background:var(--bg-hover);border-bottom:1px solid var(--border-light);">
-            <div class="tab-item active" data-org="users" onclick="orgTab('users')"><span class="dot"></span>用户管理</div>
-            <div class="tab-item"        data-org="roles" onclick="orgTab('roles')"><span class="dot"></span>角色管理</div>
-            <div class="tab-item"        data-org="depts" onclick="orgTab('depts')"><span class="dot"></span>部门管理</div>
+          <div class="app-tabs" role="tablist" aria-label="组织子导航" style="margin:-20px -20px 16px;padding:0 20px;background:var(--bg-hover);border-bottom:1px solid var(--border-light);">
+            <button type="button" class="tab-item active" role="tab" aria-selected="true"  data-org="users" onclick="orgTab('users')"><span class="dot"></span>用户管理</button>
+            <button type="button" class="tab-item"        role="tab" aria-selected="false" data-org="roles" onclick="orgTab('roles')"><span class="dot"></span>角色管理</button>
+            <button type="button" class="tab-item"        role="tab" aria-selected="false" data-org="depts" onclick="orgTab('depts')"><span class="dot"></span>部门管理</button>
           </div>
 
           <div id="orgUsers">

@@ -62,7 +62,33 @@ function show(name) {
   const sec = document.getElementById(name);
   if (sec) sec.classList.add("active");
   document.querySelectorAll(".app-tabs > .tab-item[data-tab]").forEach(b => {
-    b.classList.toggle("active", b.dataset.tab === name);
+    const on = b.dataset.tab === name;
+    b.classList.toggle("active", on);
+    b.setAttribute("aria-selected", on ? "true" : "false");
+  });
+}
+
+/* ---------- Tab 键盘导航（方向键 / Home / End） ---------- */
+function initTabs() {
+  document.querySelectorAll(".app-tabs").forEach(wrap => {
+    wrap.addEventListener("keydown", ev => {
+      // 仅无扰地响应焦点位于本组 tab 内的按键
+      if (!wrap.contains(document.activeElement)) return;
+      const tabs = Array.from(wrap.querySelectorAll(":scope > .tab-item"))
+        .filter(b => b.offsetParent !== null); // 跳过隐藏项（如非管理员的“组织架构”）
+      if (!tabs.length) return;
+      const i = tabs.indexOf(document.activeElement);
+      if (i === -1) return;
+      let next = -1;
+      if (ev.key === "ArrowRight") next = (i + 1) % tabs.length;
+      else if (ev.key === "ArrowLeft") next = (i - 1 + tabs.length) % tabs.length;
+      else if (ev.key === "Home") next = 0;
+      else if (ev.key === "End") next = tabs.length - 1;
+      else return;
+      ev.preventDefault();
+      tabs[next].focus();
+      tabs[next].click(); // 触发对应的 show() / orgTab()
+    });
   });
 }
 
@@ -707,7 +733,9 @@ function orgTab(name) {
   document.getElementById("orgDepts").style.display = name === "depts" ? "block" : "none";
   // 组织子 Tab 激活样式
   document.querySelectorAll('[data-org]').forEach(b => {
-    b.classList.toggle("active", b.dataset.org === name);
+    const on = b.dataset.org === name;
+    b.classList.toggle("active", on);
+    b.setAttribute("aria-selected", on ? "true" : "false");
   });
 }
 
@@ -960,4 +988,5 @@ async function delDept(id) {
 
 /* ---------- 启动 ---------- */
 document.getElementById("files").addEventListener("change", uploadFiles);
+initTabs();
 checkSession();
